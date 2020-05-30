@@ -1,0 +1,3 @@
+/ndn/VIP/video1	3
+/ndn/VIP/video2	3
+/ndn/VIP/animal	3

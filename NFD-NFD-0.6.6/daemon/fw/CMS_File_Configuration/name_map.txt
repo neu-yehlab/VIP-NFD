@@ -1,0 +1,9 @@
+/ndn/VIP/video1/1	/ndn/VIP/video1	1
+/ndn/VIP/video1/2	/ndn/VIP/video1	0
+/ndn/VIP/video1/3	/ndn/VIP/video1	0
+/ndn/VIP/video2/1	/ndn/VIP/video2	1
+/ndn/VIP/video2/2	/ndn/VIP/video2	0
+/ndn/VIP/video2/3	/ndn/VIP/video2	0
+/ndn/VIP/fish	/ndn/VIP/animal	0
+/ndn/VIP/bird	/ndn/VIP/animal	0
+/ndn/VIP/cat	/ndn/VIP/animal	1
