@@ -1,8 +1,0 @@
-1.Change the max ndn packet size to be 1024*1024 bytes
-	1.change ndncxx/encoding/tlv const size_t MAX_NDN_PACKET_SIZE = 
-	1048576;
-	2.reinstall NDNCxx
-	3.reinstall NFD
-	4.change MAX_NDN_PACKET_SIZE in ndn-tool into 
-	ndn::MAX_NDN_PACKET_SIZE; reinstall
-2.Add configure.hpp in NFD, set VIP corresponding parameters in this head file.
