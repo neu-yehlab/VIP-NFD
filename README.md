@@ -9,7 +9,7 @@ The installation process is the same as ordinary [NFD-0.6.6](https://github.com/
 
 * Notice: 
 NFD is based on [ndn-cxx](https://github.com/named-data/ndn-cxx).
-According to applications you use, Sometimes you need to change the max packet size in [ndn-cxx](https://github.com/named-data/ndn-cxx). if you want to change max packet size (8800 bytes ad default): Change VARIABLE:  const size_t MAX_NDN_PACKET_SIZE at FILE: ./ndn-cxx/encoding/tlv.hpp
+According to applications you use, Sometimes you need to change the max packet size in [ndn-cxx](https://github.com/named-data/ndn-cxx). if you want to change max packet size (8800 bytes ad default): `Change VARIABLE:  const size_t MAX_NDN_PACKET_SIZE at FILE: ndn-cxx/encoding/tlv.hpp`
 
 
 ## Usage
