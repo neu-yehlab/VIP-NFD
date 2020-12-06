@@ -75,7 +75,7 @@ namespace nfd {
                 std::string dataName = i->getName().toUri();
                 if(std::regex_match (dataName, std::regex("^/ndn/VIP/Count/(.*)")))//no cache for control packet
                 {
-                    std::cout<<"\n\nCS:New_VIP_Control_Data_Name:"<<dataName<<"\n"<<std::endl;
+                    //std::cout<<"\n\nCS:New_VIP_Control_Data_Name:"<<dataName<<"\n"<<std::endl;
                     this->emitSignal(beforeEvict, i);
                 }
                 
@@ -98,8 +98,8 @@ namespace nfd {
                     auto it = index0.find(contentName);
                     if(it!=index0.end())//content already cached or not the first chunk
                     {
-                        std::cout<<"Old actual data block insert\n"<<std::endl;
-                         std::cout<<"_________________________\nchunk_size:  "<<this->getCs()->size()<<"\nblock_size:  "<<m_contentCacheSize<<"\n\n\n"<<std::endl;
+                        //std::cout<<"Old actual data block insert\n"<<std::endl;
+                         //std::cout<<"_________________________\nchunk_size:  "<<this->getCs()->size()<<"\nblock_size:  "<<m_contentCacheSize<<"\n\n\n"<<std::endl;
                         m_csVIPTable.modify(it, [i,dataName](csVIPEntry& p)
                                                 {
                                                     p.m_fileLevelTable.insert(std::pair<std::string,iterator>(dataName,i));
@@ -124,8 +124,8 @@ namespace nfd {
                     else if(fw::VIP::VIPStrategy::getContentName(dataName).first.second)//content not cached yet and is first chunk
                     {
                         ++m_contentCacheSize;
-                        std::cout<<"New actual data block insert\n"<<std::endl;
-                         std::cout<<"_________________________\nchunk_size:  "<<this->getCs()->size()<<"\nblock_size:  "<<m_contentCacheSize<<"\n\n\n"<<std::endl;
+                        //std::cout<<"New actual data block insert\n"<<std::endl;
+                         //std::cout<<"_________________________\nchunk_size:  "<<this->getCs()->size()<<"\nblock_size:  "<<m_contentCacheSize<<"\n\n\n"<<std::endl;
                         if(!fw::VIP::VIPStrategy::getContentSize(contentName).second)//not recorded in table
                         {
                             this->emitSignal(beforeEvict, i);
@@ -154,8 +154,8 @@ namespace nfd {
                     }
                     else
                     {
-                        std::cout<<"Old actual data block insert\n"<<std::endl;
-                                                std::cout<<"_________________________\nchunk_size:  "<<this->getCs()->size()<<"\nblock_size:  "<<m_contentCacheSize<<"\n\n\n"<<std::endl;
+                        //std::cout<<"Old actual data block insert\n"<<std::endl;
+                                                //std::cout<<"_________________________\nchunk_size:  "<<this->getCs()->size()<<"\nblock_size:  "<<m_contentCacheSize<<"\n\n\n"<<std::endl;
                         this->emitSignal(beforeEvict, i);
                     }
                     //std:string obName = dataName.substr(0，dataName.rfind("/"));
@@ -209,7 +209,7 @@ namespace nfd {
             void
             VIPPolicy::evictEntries()
             {
-                std::cout<<"\n\n\nevict\n\n\n"<<std::endl;
+                //std::cout<<"\n\n\nevict\n\n\n"<<std::endl;
                 BOOST_ASSERT(this->getCs() != nullptr);
                 auto it = m_csVIPTable.get<1>().begin();
                 if(it!=m_csVIPTable.get<1>().end())
@@ -217,7 +217,7 @@ namespace nfd {
                     BOOST_ASSERT(!m_csVIPTable.empty());
                     for(auto iter = it->m_fileLevelTable.begin(); iter != it->m_fileLevelTable.end(); iter++)
                     {
-                        std::cout<<"\nChunk_Evict  ----------------------"<<iter->second->getName().toUri()<<std::endl;
+                        //std::cout<<"\nChunk_Evict  ----------------------"<<iter->second->getName().toUri()<<std::endl;
                         this->emitSignal(beforeEvict, iter->second);
                     
                     }
