@@ -9,7 +9,8 @@ struct NeighborEntry {
   const int face_id;
   double vip_count;
   double tx_vip_avg;
-  NeighborEntry(const int faceid, const double vipcount, const double txvipavg);
+      long last_timestamp;
+  NeighborEntry(const int faceid, const double vipcount, const double txvipavg,const long last_timestamp);
   bool operator==(const NeighborEntry& neighbor);
   friend std::ostream& operator<<(std::ostream& o, const NeighborEntry& neighbor);
 };
