@@ -81,9 +81,15 @@ VipEntry* VipTable::getEntry(const std::string key) {
 
 double VipTable::getLocalCount(const std::string key) {
   VipEntry* entry = getEntry(key);
+    if(entry != NULL) {
   return entry->getLocalCount();
 }
-
+    else
+    {
+        std::vector<NeighborEntry> neighbours;
+        insert(key, 0, 0, neighbours);
+    }
+}
 void VipTable::incLocalCount(const std::string key, const double amount) {
     uint16_t hash_val = getHash(key);
     VipEntry *prev = NULL;
@@ -96,7 +102,12 @@ void VipTable::incLocalCount(const std::string key, const double amount) {
     
     if (entry==NULL) {
         catalog_size_++;
-        entry = new VipEntry(key, amount, 0); // when some content has already been inserted in other nodes and its VIP counts have changed but it's still not inserted in the local node
+        auto now = std::chrono::system_clock::now();
+        auto now_ms = std::chrono::time_point_cast<std::chrono::seconds>(now);
+        auto epoch = now_ms.time_since_epoch();
+        auto value = std::chrono::duration_cast<std::chrono::seconds>(epoch);
+        long duration = value.count();
+        entry = new VipEntry(key, amount, amount,duration);// when some content has already been inserted in other nodes and its VIP counts have changed but it's still not inserted in the local node
         // the neighbor_vector part may come in handy, may need copy constructor
         if (prev==NULL) {
             vip_table_[hash_val] = entry;
@@ -109,6 +120,7 @@ void VipTable::incLocalCount(const std::string key, const double amount) {
         }
     }
     else {
+        //std::cout<<"\n\n\n\n\n\nincrease VIP local Count"<< amount<<std::endl;
         entry->incLocalCount(amount);
         // content was already in table, no need to adjust neighbor vector since it is already being updated
     }
@@ -126,7 +138,12 @@ uint16_t hash_val = getHash(key);
     
     if (entry==NULL) {
         catalog_size_++;
-        entry = new VipEntry(key, amount, 0); // when some content has already been inserted in other nodes and its VIP counts have changed but it's still not inserted in the local node
+        auto now = std::chrono::system_clock::now();
+        auto now_ms = std::chrono::time_point_cast<std::chrono::seconds>(now);
+        auto epoch = now_ms.time_since_epoch();
+        auto value = std::chrono::duration_cast<std::chrono::seconds>(epoch);
+        long duration = value.count();
+        entry = new VipEntry(key, 0, 0,duration); // when some content has already been inserted in other nodes and its VIP counts have changed but it's still not inserted in the local node
         // the neighbor_vector part may come in handy, may need copy constructor
         if (prev==NULL) {
             vip_table_[hash_val] = entry;
@@ -170,17 +187,57 @@ void VipTable::resetNeighborTxAvg(const std::string key, const int face_id){
 
 double VipTable::getRxVipAvg(const std::string key) {
   VipEntry* entry = getEntry(key);
+    if(entry != NULL) {
   return entry->getRxAvg();
+    }
+    else
+    {
+          std::vector<NeighborEntry> neighbours;
+             insert(key, 0, 0, neighbours);
+    }
 }
 
 double VipTable::getNeighborCount(const std::string key, const int face_id) {
   VipEntry* entry = getEntry(key);
-  return entry->getNeighborCount(face_id);
+    if(entry != NULL) {
+    return entry->getNeighborCount(face_id);
+    }
+   else
+    {
+     
+         std::vector<NeighborEntry> neighbours;
+                       auto now = std::chrono::system_clock::now();
+                            auto now_ms = std::chrono::time_point_cast<std::chrono::seconds>(now);
+                            auto epoch = now_ms.time_since_epoch();
+                            auto value = std::chrono::duration_cast<std::chrono::seconds>(epoch);
+                            long duration = value.count();
+                       NeighborEntry neighbour(face_id, 0, 0,duration);
+                       neighbours.push_back(neighbour);
+        insert(key, 0, 0, neighbours);
+        return 0;
+    }
+  
 }
 
 double VipTable::getNeighborTxAvg(const std::string key, const int face_id) {
   VipEntry* entry = getEntry(key);
-  return entry->getNeighborTxAvg(face_id);
+   if(entry != NULL) {
+      return entry->getNeighborTxAvg(face_id);
+    }
+   else
+    {
+        std::vector<NeighborEntry> neighbours;
+                             auto now = std::chrono::system_clock::now();
+                                  auto now_ms = std::chrono::time_point_cast<std::chrono::seconds>(now);
+                                  auto epoch = now_ms.time_since_epoch();
+                                  auto value = std::chrono::duration_cast<std::chrono::seconds>(epoch);
+                                  long duration = value.count();
+                             NeighborEntry neighbour(face_id, 0, 0,duration);
+                             neighbours.push_back(neighbour);
+            insert(key, 0, 0, neighbours);
+        return 0;
+    }
+  
 }
 
 void VipTable::insert(const std::string key, const double local_vip_count, const double rx_vip_avg, const std::vector<NeighborEntry> neighbor_vector) {
@@ -192,10 +249,15 @@ void VipTable::insert(const std::string key, const double local_vip_count, const
     prev = entry;
     entry = entry->getNext();
   }
-
+    auto now = std::chrono::system_clock::now();
+    auto now_ms = std::chrono::time_point_cast<std::chrono::seconds>(now);
+    auto epoch = now_ms.time_since_epoch();
+    auto value = std::chrono::duration_cast<std::chrono::seconds>(epoch);
+    long duration = value.count();
   if (entry==NULL) {
     catalog_size_++;
-    entry = new VipEntry(key, local_vip_count, rx_vip_avg, neighbor_vector); // when some content has already been inserted in other nodes and its VIP counts have changed but it's still not inserted in the local node
+      
+    entry = new VipEntry(key, local_vip_count, rx_vip_avg, neighbor_vector,duration); // when some content has already been inserted in other nodes and its VIP counts have changed but it's still not inserted in the local node
                                                       // the neighbor_vector part may come in handy, may need copy constructor
     if (prev==NULL) {
         vip_table_[hash_val] = entry;
@@ -210,6 +272,7 @@ void VipTable::insert(const std::string key, const double local_vip_count, const
   else {
       entry->setLocalCount(local_vip_count);
       entry->setRxAvg(rx_vip_avg);
+      //entry->setLastTimeStamp(duration);
       // content was already in table, no need to adjust neighbor vector since it is already being updated
   }
 }
@@ -283,7 +346,7 @@ void VipTable::resize() {
             std::string VipTable::generateDataBContent(long face_id){
                 //std::cout<<"\n\n\n\n\n\n\ngenerateDataBContent\n\n\n\n\n"<<std::endl;
                 if(catalog_size_==0){
-                    std::cout<<"\ntable is empty"<<std::endl;
+                    //std::cout<<"\ntable is empty"<<std::endl;
                     return "0\t0\n";
                 }
                 else{
@@ -293,7 +356,7 @@ void VipTable::resize() {
                     for(int i = 0; i<table_size_;++i){
                         if(vip_table_[i]!=NULL){//have VipEntry arry
                             double temp = vip_table_[i]->getLocalCount()-vip_table_[i]->getNeighborCount(face_id);
-                            std::cout<<"Face_Id:  "<<face_id<<"---------Name:  "<<vip_table_[i]->getKey()<<"  -------------VIPCount Difference:  " <<temp<<std::endl;
+                            //std::cout<<"Face_Id:  "<<face_id<<"   ---   Content Name: "<<vip_table_[i]->getKey()<<"   ---   VIPCount Difference: " <<temp<<std::endl;
                             if(abs(temp)>abs(maxDiff)){
                                 maxDiff =temp;
                                 maxDiffName = vip_table_[i]->getKey();
@@ -305,11 +368,25 @@ void VipTable::resize() {
                         {
                             content = maxDiffName + "\t" + std::to_string(this->getLocalCount(maxDiffName))+"\n";
                             this->decLocalCount(maxDiffName,this->getLocalCount(maxDiffName));
+                            auto now = std::chrono::system_clock::now();
+                            auto now_ms = std::chrono::time_point_cast<std::chrono::seconds>(now);
+                            auto epoch = now_ms.time_since_epoch();
+                            auto value = std::chrono::duration_cast<std::chrono::seconds>(epoch);
+                            long duration = value.count();
+                            this->updateNeighborTxAvg(maxDiffName, face_id, duration, -(this->getLocalCount(maxDiffName)));
+                            
                         }
                         else
                         {
                             content = maxDiffName + "\t" + std::to_string(LINK_CAPACITY)+"\n";
                             this->decLocalCount(maxDiffName,LINK_CAPACITY);
+                            auto now = std::chrono::system_clock::now();
+                            auto now_ms = std::chrono::time_point_cast<std::chrono::seconds>(now);
+                            auto epoch = now_ms.time_since_epoch();
+                            auto value = std::chrono::duration_cast<std::chrono::seconds>(epoch);
+                            long duration = value.count();
+                            this->updateNeighborTxAvg(maxDiffName, face_id, duration, -LINK_CAPACITY);
+                            
                         }
 			
                     }
@@ -327,9 +404,14 @@ void VipTable::resize() {
                     entry = entry->getNext();
                 }
                 std::vector<NeighborEntry> neighbours;
-                NeighborEntry neighbour(face_id, 0, tx_vip_avg);
+                auto now = std::chrono::system_clock::now();
+                     auto now_ms = std::chrono::time_point_cast<std::chrono::seconds>(now);
+                     auto epoch = now_ms.time_since_epoch();
+                     auto value = std::chrono::duration_cast<std::chrono::seconds>(epoch);
+                     long duration = value.count();
+                NeighborEntry neighbour(face_id, 0, tx_vip_avg,duration);
                 neighbours.push_back(neighbour);
-                this->insert(key, 0, 0, neighbours);
+                insert(key, 0, 0, neighbours);
             }
             
             
@@ -344,9 +426,36 @@ void VipTable::resize() {
                     entry = entry->getNext();
                 }
                 std::vector<NeighborEntry> neighbours;
-                NeighborEntry neighbour(face_id, vip_count, 0);
+                auto now = std::chrono::system_clock::now();
+                     auto now_ms = std::chrono::time_point_cast<std::chrono::seconds>(now);
+                     auto epoch = now_ms.time_since_epoch();
+                     auto value = std::chrono::duration_cast<std::chrono::seconds>(epoch);
+                     long duration = value.count();
+                NeighborEntry neighbour(face_id, vip_count, 0,duration);
                 neighbours.push_back(neighbour);
                 this->insert(key, 0, 0, neighbours);
             }
-        
+        void VipTable::updateRxAvg(const std::string key, const long timestamp, const double vip_amount){
+          VipEntry* entry = getEntry(key);
+            if(entry!=NULL)
+            {
+          entry->updateRxAvg(timestamp, vip_amount);
+            }
+            else
+            {
+                std::vector<NeighborEntry> neighbours;
+                            insert(key, 0, 0, neighbours);
+            }
+        }
+        void VipTable::updateNeighborTxAvg(const std::string key, const int face_id, const long timestamp, const double vip_amount){
+          VipEntry* entry = getEntry(key);
+            if(entry!=NULL)
+            {
+          entry->updateNeighborTxAvg(face_id, timestamp, vip_amount);
+            }
+            else{
+                std::vector<NeighborEntry> neighbours;
+                            insert(key, 0, 0, neighbours);
+            }
+        }
              }}}

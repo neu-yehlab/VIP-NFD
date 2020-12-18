@@ -7,6 +7,7 @@
 #include <string>
 #include "algorithm.hpp"
 #include "VIP_configure.hpp"
+
 namespace nfd {
     namespace fw {
         namespace VIP{
@@ -36,7 +37,9 @@ class VipTable {
     void setNeighborTxAvg(const std::string key, const int face_id, const double tx_vip_avg);
     std::string generateDataAContent();
     std::string generateDataBContent(long face_id);
-    void updateRxAvg(const std::string key, const double rx_vip_avg);
+     void updateNeighborTxAvg(const std::string key, const int face_id, const long timestamp, const double vip_amount);
+    void updateRxAvg(const std::string key, const long timestamp, const double vip_amount);
+
     //::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   private:
     VipEntry **vip_table_;

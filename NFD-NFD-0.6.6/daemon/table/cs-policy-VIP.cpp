@@ -52,121 +52,100 @@ namespace nfd {
             {
                 
                 //std::cout<<vt.getRxVipAvg("/neu/vipvideo/video1")<<std::endl;
-                
+                std::cout<<"=========================Contents Cached==============================="<<std::endl;
                 for(auto it = m_csVIPTable.begin();it!=m_csVIPTable.end();++it)
                 {
                     if(it->m_objectName=="") continue;
-                    std::cout<<"update"<<it->m_objectName<<"\n"<<std::endl;
+                    //std::cout<<"update"<<it->m_objectName<<"\n"<<std::endl;
                     m_csVIPTable.modify(it, [it](csVIPEntry& p)
                                         {
-                                            p.m_cacheScore=fw::VIP::VIPStrategy::getRxVipAvg(it->m_objectName)*fw::VIP::VIPStrategy::getContentSize(it->m_objectName).first;
+                                            p.m_cacheScore=fw::VIP::VIPStrategy::getRxVipAvg(it->m_objectName);
                                             //p.m_VIPCount=nfd::fw::VIP::VIPStrategy::getLocalCount(it->m_objectName);
                                         });
-                    //fw::VIP::VIPStrategy::decLocalCount(it->m_objectName, SERVICE_RATE);
+                
+                std::cout<<"Content Name: "<<it->m_objectName<<"   ---   VIP Count: "<<fw::VIP::VIPStrategy::getLocalCount(it->m_objectName)<<"   ---   Cache Score: "<<fw::VIP::VIPStrategy::getRxVipAvg(it->m_objectName)<<std::endl;
                 }
             }
             
             void
             VIPPolicy::doAfterInsert(iterator i)
             {
-                
-            
-               
                 std::string dataName = i->getName().toUri();
                 if(std::regex_match (dataName, std::regex("^/ndn/VIP/Count/(.*)")))//no cache for control packet
                 {
-                    //std::cout<<"\n\nCS:New_VIP_Control_Data_Name:"<<dataName<<"\n"<<std::endl;
+                    std::cout<<"\n\nCS:New_VIP_Control_Data_Name:"<<dataName<<"\n"<<std::endl;
                     this->emitSignal(beforeEvict, i);
                 }
-                
-                else if(std::regex_match (dataName, std::regex("^/ndn/VIP/(.*)")))//cache the packets that use VIP algorithm.
+                            
+                //else if(std::regex_match (dataName, std::regex("^/ndn/VIP/(.*)")))//cache the packets that use VIP algorithm.
+                else
                 {
                     std::string contentName;
                     if(fw::VIP::VIPStrategy::getContentName(dataName).second)//check the content name of received chunk; if it exists in the mapping table, get the name
                     {
                         contentName = fw::VIP::VIPStrategy::getContentName(dataName).first.first;
                     }
-                    else
+                    else if(fw::VIP::VIPStrategy::getContentName(dataName.substr(0,dataName.rfind("/"))).second)//if the prefix name exists
+                    {
+                        contentName = fw::VIP::VIPStrategy::getContentName(dataName.substr(0,dataName.rfind("/"))).first.first;
+                    }
+                    else//unregistered
                     {
                         std::cerr<<"unregistered file Name"<<std::endl;
                         this->emitSignal(beforeEvict, i);
                         return;
                     }
-                    
+                                
                     auto& index0 = m_csVIPTable.get<0>();
                     auto& index1 = m_csVIPTable.get<1>();
                     auto it = index0.find(contentName);
-                    if(it!=index0.end())//content already cached or not the first chunk
+                    if(it!=index0.end())//content already cached
                     {
-                        //std::cout<<"Old actual data block insert\n"<<std::endl;
-                         //std::cout<<"_________________________\nchunk_size:  "<<this->getCs()->size()<<"\nblock_size:  "<<m_contentCacheSize<<"\n\n\n"<<std::endl;
+                        //std::cout<<"following actual data block insert\n"<<std::endl;
+                        //std::cout<<"_________________________\nchunk_size:  "<<this->getCs()->size()<<"\nblock_size:  "<<m_contentCacheSize<<"\n\n\n"<<std::endl;
                         m_csVIPTable.modify(it, [i,dataName](csVIPEntry& p)
-                                                {
-                                                    p.m_fileLevelTable.insert(std::pair<std::string,iterator>(dataName,i));
-                                                });
-                        BOOST_ASSERT(this->getCs()->size() <= CS_LIMIT);//enough space, just cache this chunk
-                        
-                        /*
-                        if(this->getCs()->size() <= CS_LIMIT)//enough space, just cache this chunk
-                        {
-                            m_csVIPTable.modify(it, [i,dataName](csVIPEntry& p)
-                                                {
-                                                    p.m_fileLevelTable.insert(std::pair<std::string,iterator>(dataName,i));
-                                                });
-                        }
-                        else//no enough space, drop this chunk
-                        {
-                            this->emitSignal(beforeEvict, i);
-                        }
-                         */
-                        
+                                            {
+                            p.m_fileLevelTable.insert(std::pair<std::string,iterator>(dataName,i));
+                                                            });
+                        //BOOST_ASSERT(this->getCs()->size() <= CS_LIMIT);//enough space, just cache this chunk
                     }
                     else if(fw::VIP::VIPStrategy::getContentName(dataName).first.second)//content not cached yet and is first chunk
                     {
                         ++m_contentCacheSize;
-                        //std::cout<<"New actual data block insert\n"<<std::endl;
-                         //std::cout<<"_________________________\nchunk_size:  "<<this->getCs()->size()<<"\nblock_size:  "<<m_contentCacheSize<<"\n\n\n"<<std::endl;
-                        if(!fw::VIP::VIPStrategy::getContentSize(contentName).second)//not recorded in table
-                        {
-                            this->emitSignal(beforeEvict, i);
-                            --m_contentCacheSize;
-                            return;
-                        }
+                        
                         if((m_contentCacheSize)<= CS_LIMIT)//enough space
                         {
-                            index0.insert(csVIPEntry(contentName,nfd::fw::VIP::VIPStrategy::getRxVipAvg(contentName)*fw::VIP::VIPStrategy::getContentSize(contentName).first,i));
+                            index0.insert(csVIPEntry(contentName,nfd::fw::VIP::VIPStrategy::getRxVipAvg(contentName),i));
                         }
                         else//no enough space, need compare and evict
                         {
-                            
-                            if(index1.begin()->m_cacheScore < nfd::fw::VIP::VIPStrategy::getRxVipAvg(contentName)*fw::VIP::VIPStrategy::getContentSize(contentName).first)//insert and evict old content
+                            if(index1.begin()->m_cacheScore < nfd::fw::VIP::VIPStrategy::getRxVipAvg(contentName))//insert and evict old content
                             {
-                                index1.insert(csVIPEntry(contentName,nfd::fw::VIP::VIPStrategy::getRxVipAvg(contentName)*fw::VIP::VIPStrategy::getContentSize(contentName).first));
-                                
+                                //std::cout<<"repalace old content"<<std::endl;
                                 this->evictEntries();
+                                index0.insert(csVIPEntry(contentName,nfd::fw::VIP::VIPStrategy::getRxVipAvg(contentName),i));
                             }
                             else// not popular enough
                             {
+                                //std::cout<<"not popular enough"<<std::endl;
                                 this->emitSignal(beforeEvict, i);
                             }
                             --m_contentCacheSize;
                         }
+                        //std::cout<<"New actual data block insert\n"<<std::endl;
+                        //std::cout<<"_________________________\nchunk_size:  "<<this->getCs()->size()<<"\nblock_size:  "<<m_contentCacheSize<<"\n\n\n"<<std::endl;
                     }
                     else
                     {
-                        //std::cout<<"Old actual data block insert\n"<<std::endl;
-                                                //std::cout<<"_________________________\nchunk_size:  "<<this->getCs()->size()<<"\nblock_size:  "<<m_contentCacheSize<<"\n\n\n"<<std::endl;
+                        //std::cout<<"following low score actual data block insert\n"<<std::endl;
+                        
                         this->emitSignal(beforeEvict, i);
+                        //std::cout<<"_________________________\nchunk_size:  "<<this->getCs()->size()<<"\nblock_size:  "<<m_contentCacheSize<<"\n\n\n"<<std::endl;
                     }
                     //std:string obName = dataName.substr(0，dataName.rfind("/"));
                 }
-                else
-                {
-                    this->emitSignal(beforeEvict, i);
-                    return;
-                }
-                
             }
+           
             
             
             
@@ -178,6 +157,10 @@ namespace nfd {
                 if(fw::VIP::VIPStrategy::getContentName(dataName).second)//check the content name of erased chunk
                 {
                     contentName = fw::VIP::VIPStrategy::getContentName(dataName).first.first;
+                }
+                else if (fw::VIP::VIPStrategy::getContentName(dataName.substr(0,dataName.rfind('/'))).second)
+                {
+                contentName = fw::VIP::VIPStrategy::getContentName(dataName.substr(0,dataName.rfind('/'))).first.first;
                 }
                 else
                 {
@@ -209,15 +192,16 @@ namespace nfd {
             void
             VIPPolicy::evictEntries()
             {
-                //std::cout<<"\n\n\nevict\n\n\n"<<std::endl;
+                std::cout<<"\n\n\nevict\n\n\n"<<std::endl;
                 BOOST_ASSERT(this->getCs() != nullptr);
                 auto it = m_csVIPTable.get<1>().begin();
                 if(it!=m_csVIPTable.get<1>().end())
                 {
                     BOOST_ASSERT(!m_csVIPTable.empty());
-                    for(auto iter = it->m_fileLevelTable.begin(); iter != it->m_fileLevelTable.end(); iter++)
-                    {
-                        //std::cout<<"\nChunk_Evict  ----------------------"<<iter->second->getName().toUri()<<std::endl;
+                    std::cout<<"========================= Chunk_Evict ===================="<<std::endl;
+                    for(auto iter = it->m_fileLevelTable.begin(); iter != it->m_fileLevelTable.end(); ++iter)
+                    { 
+                        std::cout<<"Evicted Chunk Name: "<<iter->second->getName().toUri()<<std::endl;
                         this->emitSignal(beforeEvict, iter->second);
                     
                     }

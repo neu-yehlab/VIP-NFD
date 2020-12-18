@@ -89,6 +89,8 @@ namespace nfd {
             public:
                 explicit
                 VIPStrategy(Forwarder& forwarder,const Name& name = getStrategyName());
+                void afterContentStoreHit(const shared_ptr<pit::Entry>& pitEntry,
+                                          const FaceEndpoint& ingress, const Data& data) override;
                 void afterReceiveInterest(const FaceEndpoint& ingress,const Interest& interest,const shared_ptr<pit::Entry>& pitEntry) override;
                 //multicast VIPInterestA, unicast for VIPInterestB
                 void afterReceiveData(const shared_ptr<pit::Entry>& pitEntry, const FaceEndpoint& ingress, const Data& data) override;
@@ -113,7 +115,15 @@ namespace nfd {
                 generateVIPCountDataB(Name nameIB);
                 static std::pair<std::pair<std::string,bool>,bool> getContentName(std::string chunkName);
                 static std::pair<double,bool> getContentSize(std::string contentName);
+                inline static void incLocalCount(std::string key, double amount)
+                {
+                    return m_VIPTable.incLocalCount(key, amount);
+                }
                 //inline static std::pair<std::string, bool> get//?????
+                inline static void updateRxAvg(std::string key,const long timestamp,const double vip_amount)
+                {
+                    return m_VIPTable.updateRxAvg(key, timestamp, vip_amount);
+                }
                 inline static double getRxVipAvg(const std::string key)
                 {
                     return m_VIPTable.getRxVipAvg(key);
@@ -132,7 +142,7 @@ namespace nfd {
                 inline static bool compare(std::string A, std::string B)
                 {
                     //return (m_VIPTable.getRxVipAvg(A))*(getContentSize(A).first)>(m_VIPTable.getRxVipAvg(B))*(getContentSize(B).first);
-                    return (m_VIPTable.getLocalCount(A))*(getContentSize(A).first)>(m_VIPTable.getLocalCount(B))*(getContentSize(B).first);
+                    return (m_VIPTable.getRxVipAvg(A))>(m_VIPTable.getRxVipAvg(B));
                 }
             private:
                

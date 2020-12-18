@@ -2,11 +2,11 @@
 namespace nfd {
     namespace fw {
         namespace VIP{
-VipEntry::VipEntry(const std::string key, const double local_vip_count, const double rx_vip_avg, const std::vector<NeighborEntry> neighbor_vector) :
-key_(key), local_vip_count_(local_vip_count), rx_vip_avg_(rx_vip_avg), neighbor_vector_(neighbor_vector), next_(NULL) {}
+VipEntry::VipEntry(const std::string key, const double local_vip_count, const double rx_vip_avg, const std::vector<NeighborEntry> neighbor_vector, const long timestamp) :
+        key_(key), local_vip_count_(local_vip_count), rx_vip_avg_(rx_vip_avg), neighbor_vector_(neighbor_vector),last_timestamp_(timestamp), next_(NULL) {}
 
-VipEntry::VipEntry(const std::string key, const double local_vip_count, const double rx_vip_avg) :
-key_(key), local_vip_count_(local_vip_count), rx_vip_avg_(rx_vip_avg), next_(NULL) {}
+VipEntry::VipEntry(const std::string key, const double local_vip_count, const double rx_vip_avg,const long timestamp) :
+key_(key), local_vip_count_(local_vip_count), rx_vip_avg_(rx_vip_avg), next_(NULL), neighbor_vector_(),last_timestamp_(timestamp){}
             
 std::string VipEntry::getKey() const {
   return key_;
@@ -58,7 +58,12 @@ void VipEntry::setNeighborCount(const int face_id, double vip_count) {
     it->vip_count = vip_count;
   }
   else {
-      NeighborEntry neighbor_Entry(face_id, vip_count, 0);
+      auto now = std::chrono::system_clock::now();
+      auto now_s = std::chrono::time_point_cast<std::chrono::seconds>(now);
+      auto epoch = now_s.time_since_epoch();
+      auto value = std::chrono::duration_cast<std::chrono::seconds>(epoch);
+      long duration = value.count();
+      NeighborEntry neighbor_Entry(face_id, vip_count, 0,duration);
       neighbor_vector_.push_back(neighbor_Entry);
     // TO DO: Appropriate error / exception handling
     //std::cout << "Attempt to update neighbor VIP count failed: no neighbor with given face ID exists.\n";
@@ -74,7 +79,12 @@ void VipEntry::setNeighborTxAvg(const int face_id, const double tx_vip_avg) {
     it->tx_vip_avg = tx_vip_avg;
   }
   else {
-      NeighborEntry neighbor_Entry(face_id, 0, tx_vip_avg);
+      auto now = std::chrono::system_clock::now();
+      auto now_s = std::chrono::time_point_cast<std::chrono::seconds>(now);
+      auto epoch = now_s.time_since_epoch();
+      auto value = std::chrono::duration_cast<std::chrono::seconds>(epoch);
+      long duration = value.count();
+      NeighborEntry neighbor_Entry(face_id, 0, tx_vip_avg,duration);
       neighbor_vector_.push_back(neighbor_Entry);
     // TO DO: Appropriate error / exception handling
     //std::cout << "Attempt to update transmitted VIP average to neighbor failed: no neighbor with given face ID exists.\n";
@@ -95,7 +105,12 @@ double VipEntry::getNeighborCount(const int face_id){
   }
   else {
     // TO DO: Appropriate error / exception handling
-      NeighborEntry neighbor_Entry(face_id, 0, 0);
+      auto now = std::chrono::system_clock::now();
+      auto now_s = std::chrono::time_point_cast<std::chrono::seconds>(now);
+      auto epoch = now_s.time_since_epoch();
+      auto value = std::chrono::duration_cast<std::chrono::seconds>(epoch);
+      long duration = value.count();
+      NeighborEntry neighbor_Entry(face_id, 0, 0,duration);
       neighbor_vector_.push_back(neighbor_Entry);
     //std::cout << "Attempt to get neighbor VIP count failed: no neighbor with given face ID exists.\n";
     return 0;
@@ -112,7 +127,12 @@ double VipEntry::getNeighborTxAvg(const int face_id){
   }
   else {
     // TO DO: Appropriate error / exception handling
-      NeighborEntry neighbor_Entry(face_id, 0, 0);
+      auto now = std::chrono::system_clock::now();
+      auto now_ms = std::chrono::time_point_cast<std::chrono::seconds>(now);
+      auto epoch = now_ms.time_since_epoch();
+      auto value = std::chrono::duration_cast<std::chrono::seconds>(epoch);
+      long duration = value.count();
+      NeighborEntry neighbor_Entry(face_id, 0, 0,duration);
       neighbor_vector_.push_back(neighbor_Entry);
     //std::cout << "Attempt to get transmitted VIP average to neighbor failed: no neighbor with given face ID exists.\n";
     return 0;
@@ -127,4 +147,22 @@ void VipEntry::setNext(VipEntry *next) {
 VipEntry * VipEntry::getNext() const {
   return next_;
 }
+        void VipEntry::updateRxAvg(const long timestamp, const double vip_amount){
+          rx_vip_avg_ = rx_vip_avg_ * exp( kDecayParam * (double)(last_timestamp_-timestamp)) + vip_amount;
+          last_timestamp_ = timestamp;
+        }
+        void VipEntry::updateNeighborTxAvg(const int face_id, const long timestamp, const double vip_amount) {
+          auto pred = [face_id](const NeighborEntry& neighbor) {
+            return neighbor.face_id == face_id;
+          };
+          std::vector<NeighborEntry>::iterator it = std::find_if(neighbor_vector_.begin(),neighbor_vector_.end(),pred);
+          if (it!=neighbor_vector_.end()) {
+            it->tx_vip_avg = it->tx_vip_avg * exp( kDecayParam * (it->last_timestamp - timestamp)) + vip_amount;
+            it->last_timestamp = timestamp;
+          }
+          else {
+            // TO DO: Appropriate error / exception handling
+            std::cout << "Attempt to update transmitted VIP average to neighbor failed: no neighbor with given face ID exists.\n";
+          }
+        }
         }}}

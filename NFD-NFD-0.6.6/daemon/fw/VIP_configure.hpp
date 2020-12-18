@@ -13,7 +13,8 @@
 #define VIPBName "/ndn/VIP/Count/B"
 
 #define LINK_CAPACITY 1.0
-#define PERIOD 5_s
-#define CS_LIMIT 10
-#define SERVICE_RATE 2.0
+#define PERIOD 1_s
+#define CS_LIMIT 10.0
+#define SERVICE_RATE 1.0
+#define kDecayParam 0.01
 #endif /* VIP_configure_hpp */
