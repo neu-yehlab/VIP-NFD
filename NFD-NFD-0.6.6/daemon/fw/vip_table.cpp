@@ -88,6 +88,7 @@ double VipTable::getLocalCount(const std::string key) {
     {
         std::vector<NeighborEntry> neighbours;
         insert(key, 0, 0, neighbours);
+	return 0;
     }
 }
 void VipTable::incLocalCount(const std::string key, const double amount) {
@@ -194,6 +195,7 @@ double VipTable::getRxVipAvg(const std::string key) {
     {
           std::vector<NeighborEntry> neighbours;
              insert(key, 0, 0, neighbours);
+	     return 0;
     }
 }
 

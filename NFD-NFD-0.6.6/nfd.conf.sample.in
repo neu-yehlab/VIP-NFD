@@ -65,7 +65,7 @@ tables
     /localhost      /localhost/nfd/strategy/multicast
     /localhost/nfd  /localhost/nfd/strategy/best-route
     /ndn/broadcast  /localhost/nfd/strategy/multicast
-    /ndn/VIP        /localhost/nfd/strategy/VIP
+    /ndn            /localhost/nfd/strategy/VIP
     /ndn/asf        /localhost/nfd/strategy/asf
   }
 

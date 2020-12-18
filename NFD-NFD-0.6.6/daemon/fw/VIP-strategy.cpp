@@ -38,8 +38,6 @@
 #include <sstream>
 #include <cmath>
 
-
-
 namespace nfd {
     namespace fw {
         namespace VIP{
@@ -376,8 +374,12 @@ m_VIPTransTable.insert(std::pair<long,bool>(stol(iName[6].toUri()),false));
                 //std::cout<<"\n\n\n=========================Interest Packet Received=========================="<<std::endl;
                 //std::cout<<"Interest Face ID: "<<m_interestFaceId<<"   ---   Data Face ID: "<<m_dataFaceId<<"  "<<interestString<<std::endl;
                 const fib::Entry& fibEntry = this->lookupFib(*pitEntry);
-                if(std::regex_match(interestString, std::regex("^/ndn/VIP/Count/A/(.*)") ) && (m_interestFaceId*m_dataFaceId)!=0)//if get interestA
-                {
+		if(std::regex_match(interestString, std::regex("^/ndn/VIP/(.*)")))
+	        {
+		if(std::regex_match(interestString, std::regex("^/ndn/VIP/Count/A/(.*)") ) && (m_interestFaceId*m_dataFaceId)!=0)//if get interestA
+                 //if(Name("/ndn/VIP/Count")&& (m_interestFaceId*m_dataFaceId)!=0)//if get interest
+
+		{
                                 
                     //std::cout<<"packet A"<<std::endl;
                                 
@@ -442,7 +444,7 @@ m_VIPTransTable.insert(std::pair<long,bool>(stol(iName[6].toUri()),false));
                     m_dataFaceId=ingress.face.getId();
                     return;
                 }
-                            
+                }           
                 else if(VIPStrategy::getContentName(interestString).second)//actual interest
                 {
                     std::string objName = VIPStrategy::getContentName(interestString).first.first;

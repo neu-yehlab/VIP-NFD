@@ -63,7 +63,7 @@ namespace nfd {
                                             //p.m_VIPCount=nfd::fw::VIP::VIPStrategy::getLocalCount(it->m_objectName);
                                         });
                 
-                std::cout<<"Content Name: "<<it->m_objectName<<"   ---   VIP Count: "<<fw::VIP::VIPStrategy::getLocalCount(it->m_objectName)<<"   ---   Cache Score: "<<fw::VIP::VIPStrategy::getRxVipAvg(it->m_objectName)<<std::endl;
+               std::cout<<"Content Name: "<<it->m_objectName<<"   ---   VIP Count: "<<fw::VIP::VIPStrategy::getLocalCount(it->m_objectName)<<"   ---   Cache Score: "<<fw::VIP::VIPStrategy::getRxVipAvg(it->m_objectName)<<std::endl;
                 }
             }
             
@@ -91,7 +91,7 @@ namespace nfd {
                     }
                     else//unregistered
                     {
-                        std::cerr<<"unregistered file Name"<<std::endl;
+                        //std::cerr<<"unregistered file Name"<<std::endl;
                         this->emitSignal(beforeEvict, i);
                         return;
                     }
@@ -198,10 +198,10 @@ namespace nfd {
                 if(it!=m_csVIPTable.get<1>().end())
                 {
                     BOOST_ASSERT(!m_csVIPTable.empty());
-                    std::cout<<"========================= Chunk_Evict ===================="<<std::endl;
+                    //std::cout<<"========================= Chunk_Evict ===================="<<std::endl;
                     for(auto iter = it->m_fileLevelTable.begin(); iter != it->m_fileLevelTable.end(); ++iter)
                     { 
-                        std::cout<<"Evicted Chunk Name: "<<iter->second->getName().toUri()<<std::endl;
+                        //std::cout<<"Evicted Chunk Name: "<<iter->second->getName().toUri()<<std::endl;
                         this->emitSignal(beforeEvict, iter->second);
                     
                     }
