@@ -11,8 +11,11 @@ RUN yum -y install sudo vim htop git curl.x86_64 bind-utils.x86_64 \
         libstdc++-devel net-tools cmake3.x86_64 xrootd-client.x86_64 \
         xrootd-client-devel.x86_64 xrootd-client-libs.x86_64 \
         xrootd-devel.x86_64 xrootd-libs.x86_64 xrootd-server.x86_64 \
-        xrootd-server-devel.x86_64 xrootd-server-libs.x86_64 centos-release-scl
-RUN yum -y install devtoolset-8-gcc*
+        xrootd-server-devel.x86_64 xrootd-server-libs.x86_64 centos-release-scl \
+        build-essential pkg-config libboost-all-dev \
+        openssl-devel libssl-devel libpcap-devel sqlite-devel
+RUN yum -y install devtoolset-8-gcc devtoolset-8-gcc-c++
+  #  scl enable devtoolset-8 bash
 RUN sudo sh -c "printf '\
 export PATH=\$PATH:/opt/rh/devtoolset-8/root/usr/bin\n\
 scl_source enable devtoolset-8\
@@ -27,12 +30,17 @@ WORKDIR ${HOME}/sandie-ndn-repo/RPMS/x86_64/
 RUN rpm -i boost1_69_0/boost-license1_69_0-1.69.0-1.x86_64.rpm \
         boost1_69_0/libboost_* boost1_69_0/boost-devel-1.69.0-1.x86_64.rpm \
         ndn-cxx-0.7.0/libndn-cxx-* ndn-tools-0.7/ndn-tools-0.7-10.el7.x86_64.rpm
-RUN cd /root/ && \
+#RUN ARCH=$( /bin/arch ) && \
+#    subscription-manager repos --enable "codeready-builder-for-rhel-8-${ARCH}-rpms" && \
+#    dnf config-manager --set-enabled powertools && \
+#    yum install https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
+RUN source scl_source enable devtoolset-8 && \
+    cd /root/ && \
     git clone https://github.com/neu-yehlab/VIP-NFD.git && \
-    cd ./VIP-NFD/NFD && \
-    mkdir -p websocketpp && \
-    curl -L https://github.com/cawka/websocketpp/archive/0.8.1-hotfix.tar.gz > websocketpp.tar.gz && \
-    tar xf websocketpp.tar.gz -C websocketpp/ --strip 1 && \
+    cd ./VIP-NFD/nfd-0.7.0 && \
+    #mkdir -p websocketpp && \
+    #curl -L https://github.com/cawka/websocketpp/archive/0.8.1-hotfix.tar.gz > websocketpp.tar.gz && \
+    #tar xf websocketpp.tar.gz -C websocketpp/ --strip 1 && \
     ./waf configure && \
     ./waf && \
     ./waf install && \
