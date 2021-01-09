@@ -45,7 +45,8 @@ RUN source scl_source enable devtoolset-8 && \
     ./waf && \
     ./waf install && \
     cp /usr/local/etc/ndn/nfd.conf.sample /usr/local/etc/ndn/nfd.conf && \
-    ldconfig
+    ldconfig && \
+    export PATH=\$PATH:/usr/local/bin
 RUN rpm -i xrdndn-consumer-0.2.0-4.el7.x86_64.rpm \
         xrdndn-producer-0.2.0-4.el7.x86_64.rpm xrootd-ndn-fs-0.2.0-4.el7.x86_64.rpm
 WORKDIR ${HOME}/sandie-ndn
