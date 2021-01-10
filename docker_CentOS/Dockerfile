@@ -15,9 +15,10 @@ RUN yum -y install sudo vim htop git curl.x86_64 bind-utils.x86_64 \
         build-essential pkg-config libboost-all-dev \
         openssl-devel libssl-devel libpcap-devel sqlite-devel
 RUN yum -y install devtoolset-8-gcc devtoolset-8-gcc-c++
-  #  scl enable devtoolset-8 bash
+  #  scl enable devtoolset-8 bash and add path of /usr/local/bin for nfd command
 RUN sudo sh -c "printf '\
 export PATH=\$PATH:/opt/rh/devtoolset-8/root/usr/bin\n\
+export PATH=\$PATH:/usr/local/bin\n\
 scl_source enable devtoolset-8\
 ' > /etc/profile.d/container.sh"
 
@@ -45,8 +46,7 @@ RUN source scl_source enable devtoolset-8 && \
     ./waf && \
     ./waf install && \
     cp /usr/local/etc/ndn/nfd.conf.sample /usr/local/etc/ndn/nfd.conf && \
-    ldconfig && \
-    export PATH=\$PATH:/usr/local/bin
+    ldconfig
 RUN rpm -i xrdndn-consumer-0.2.0-4.el7.x86_64.rpm \
         xrdndn-producer-0.2.0-4.el7.x86_64.rpm xrootd-ndn-fs-0.2.0-4.el7.x86_64.rpm
 WORKDIR ${HOME}/sandie-ndn
