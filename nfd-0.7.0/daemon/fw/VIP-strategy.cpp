@@ -178,7 +178,10 @@ namespace nfd {
                 std::cout<<"\n\n\n=========================Virtual Cache Table=========================="<<std::endl;
                 while(it!=m_virtualCacheTable.end())//&&
                 {
-                    
+                    if(isProducer)
+		    {
+                      m_VIPTable.decLocalCount(*it, SERVICE_RATE);
+                    } 
                     std::cout<<"Content Name: "<<*it<<"   ---   VIP Count: "<<m_VIPTable.getLocalCount(*it)<<"   ---   Cache Score: "<<m_VIPTable.getRxVipAvg(*it)<<std::endl;
                     if(tempCount<CS_LIMIT)
                     {
@@ -488,6 +491,12 @@ m_VIPTransTable.insert(std::pair<long,bool>(stol(iName[6].toUri()),false));
                     for (const auto& nexthop : fibEntry.getNextHops())
                     {
                         Face& outFace = nexthop.getFace();
+			if(outFace.getScope() == ndn::nfd::FACE_SCOPE_LOCAL)//if this forwarder is on producer node
+			{
+			   //std::string objName = VIPStrategy::getContentName(interestString).first.first;
+			   m_VIPTable.decLocalCount(objName,100.0); 
+			   
+			}
                         if (!wouldViolateScope(ingress.face, interest, outFace) &&
                             canForwardToLegacy(*pitEntry, outFace))
                         {
@@ -504,7 +513,14 @@ m_VIPTransTable.insert(std::pair<long,bool>(stol(iName[6].toUri()),false));
                                 maxTxFaceId = outFace.getId();
                             }
                                         //this->sendInterest(pitEntry, FaceEndpoint(outFace, 0), interest);
-                        }
+                            /*if(outFace.getScope() == ndn::nfd::FACE_SCOPE_LOCAL)//if this forwarder is on producer node
+                           {
+                             //printf("\nproducer for interest\n");
+                             //std::string objName = VIPStrategy::getContentName(interestString).first.first;
+                             m_VIPTable.decLocalCount(objName,100.0);
+                             break;                                                   
+                           }*/
+			}
                     }
                     if(maxTxAvg)
                     {
@@ -685,6 +701,7 @@ m_VIPTransTable.insert(std::pair<long,bool>(stol(iName[6].toUri()),false));
             void VIPStrategy::afterContentStoreHit(const shared_ptr<pit::Entry>& pitEntry,
                                            const FaceEndpoint& ingress, const Data& data)
             {
+		
                   std::string dataName = data.getName().toUri();
                   //std::cout<<"\n\n\n=========================Cache Hit Happened=========================="<<std::endl;
                   //std::cout<<"Data Name: "<<dataName<<std::endl;
@@ -700,6 +717,7 @@ m_VIPTransTable.insert(std::pair<long,bool>(stol(iName[6].toUri()),false));
                           long duration = value.count();
                           fw::VIP::VIPStrategy::updateRxAvg(contentName,duration,1.0);
                       }
+                    
               this->sendData(pitEntry, data, ingress);
             }
         //:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
