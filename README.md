@@ -11,6 +11,12 @@ The installation process is the same as ordinary [NFD-0.6.6](https://github.com/
 NFD is based on [ndn-cxx](https://github.com/named-data/ndn-cxx).
 According to applications you use, Sometimes you need to change the max packet size in [ndn-cxx](https://github.com/named-data/ndn-cxx). if you want to change max packet size (8800 bytes ad default): `Change variable:  const size_t MAX_NDN_PACKET_SIZE in file: ndn-cxx/encoding/tlv.hpp`
 
+* Use Docker:
+```bash
+sudo docker build . --no-cache -t nfddockerimg:3.0.1  --network=host
+sudo docker run -d -it --name=VIP-NFD --cap-add=NET_ADMIN --net=host nfddockerimg:3.0.1
+```
+You could change configure files under [CMS_File_Configuration] to register chunk level names, data object level names, and data object size.
 
 ## Usage
 Similar to [NFD-0.6.6](https://github.com/named-data/NFD/tree/NFD-0.6.6). Since VIP algorithm is implemented as an optional strategy, you can choose it in the configure file: [nfd.conf.sample.in](https://github.com/neu-yehlab/VIP-NFD/blob/master/NFD-NFD-0.6.6/nfd.conf.sample.in) just like any other available strategy with the following way: 
