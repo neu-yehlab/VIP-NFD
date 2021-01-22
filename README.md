@@ -15,6 +15,7 @@ According to applications you use, Sometimes you need to change the max packet s
 ```bash
 sudo docker build . --no-cache -t nfddockerimg:3.0.1  --network=host
 sudo docker run -d -it --name=VIP-NFD --cap-add=NET_ADMIN --net=host nfddockerimg:3.0.1
+docker exec -it VIP-NFD /bin/bash
 ```
 You could change configure files under [CMS_File_Configuration] to register chunk level names, data object level names, and data object size.
 
