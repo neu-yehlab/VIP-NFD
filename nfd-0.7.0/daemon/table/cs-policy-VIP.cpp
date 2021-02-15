@@ -37,7 +37,7 @@
 namespace nfd {
     namespace cs {
         namespace VIPcache {
-            
+            NFD_LOG_INIT(VIPcache);
             const std::string VIPPolicy::POLICY_NAME = "VIP";
             csVIPTable VIPPolicy::m_csVIPTable;
             NFD_REGISTER_CS_POLICY(VIPPolicy);
@@ -52,7 +52,7 @@ namespace nfd {
             {
                 
                 //std::cout<<vt.getRxVipAvg("/neu/vipvideo/video1")<<std::endl;
-                std::cout<<"=========================Contents Cached==============================="<<std::endl;
+                NFD_LOG_INFO("\n=========================Contents Cached===============================\n");
                 for(auto it = m_csVIPTable.begin();it!=m_csVIPTable.end();++it)
                 {
                     if(it->m_objectName=="") continue;
@@ -63,7 +63,7 @@ namespace nfd {
                                             //p.m_VIPCount=nfd::fw::VIP::VIPStrategy::getLocalCount(it->m_objectName);
                                         });
                 
-               std::cout<<"Content Name: "<<it->m_objectName<<"   ---   VIP Count: "<<fw::VIP::VIPStrategy::getLocalCount(it->m_objectName)<<"   ---   Cache Score: "<<fw::VIP::VIPStrategy::getRxVipAvg(it->m_objectName)<<std::endl;
+               NFD_LOG_INFO("Content Name: "<<it->m_objectName<<"   ---   VIP Count: "<<fw::VIP::VIPStrategy::getLocalCount(it->m_objectName)<<"   ---   Cache Score: "<<fw::VIP::VIPStrategy::getRxVipAvg(it->m_objectName));
                 }
             }
             
@@ -147,7 +147,7 @@ namespace nfd {
                 }
 		else if(std::regex_match (dataName, std::regex("^/ndn/VIP/Count/(.*)")))//no cache for control packet
                 {
-                    std::cout<<"\n\nCS:New_VIP_Control_Data_Name:"<<dataName<<"\n"<<std::endl;
+                    NFD_LOG_DEBUG("CS:New_VIP_Control_Data_Name:"<<dataName);
                     this->emitSignal(beforeEvict, i);
                 }
             }
@@ -198,7 +198,8 @@ namespace nfd {
             void
             VIPPolicy::evictEntries()
             {
-                std::cout<<"\n\n\nevict\n\n\n"<<std::endl;
+                
+	        NFD_LOG_DEBUG("evict");
                 BOOST_ASSERT(this->getCs() != nullptr);
                 auto it = m_csVIPTable.get<1>().begin();
                 if(it!=m_csVIPTable.get<1>().end())

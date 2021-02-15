@@ -37,10 +37,13 @@
 #include <ndn-cxx/face.hpp>
 #include <sstream>
 #include <cmath>
+#include "common/logger.hpp"
 
 namespace nfd {
     namespace fw {
         namespace VIP{
+            NFD_LOG_INIT(VIPStrategy);
+            NFD_REGISTER_STRATEGY(VIPStrategy);
             
             VipTable VIPStrategy::m_VIPTable(100);
             std::unordered_map<std::string,std::pair<std::string,bool>> VIPStrategy::m_nameMapTable(100);
@@ -78,7 +81,7 @@ namespace nfd {
             void
             VIPStrategy::onDataA(const Interest& interest, const Data& data)
             {
-                std::cout<<"DATA_A: "<<data<<std::endl;
+                //std::cout<<"DATA_A: "<<data<<std::endl;
                 /*
                  std::string dataAContent((const char*)data.getContent().value(),data.getContent().value_size());
                  std::cout<<dataAContent<<"\n\n"<<std::endl;
@@ -144,7 +147,7 @@ namespace nfd {
                 ss << std::put_time(std::localtime(&nowTime), "%F %T");
                 
                 std::string nowTimeString = ss.str();
-                std::cout<<nowTimeString<<std::endl;//only for test
+                //std::cout<<nowTimeString<<std::endl;//only for test
                 Name VIPCountName(m_VIPNameA);
                 VIPCountName.appendTimestamp();
                 Interest VIPCountPacket(VIPCountName);
@@ -175,14 +178,14 @@ namespace nfd {
                 //m_isVIPSendFinished=false;
                 auto it =m_virtualCacheTable.begin();
                 int tempCount = 0;
-                std::cout<<"\n\n\n=========================Virtual Cache Table=========================="<<std::endl;
+                NFD_LOG_INFO("\n=========================Virtual Cache Table==========================\n");
                 while(it!=m_virtualCacheTable.end())//&&
                 {
                     if(isProducer)
 		    {
                       m_VIPTable.decLocalCount(*it, SERVICE_RATE);
                     } 
-                    std::cout<<"Content Name: "<<*it<<"   ---   VIP Count: "<<m_VIPTable.getLocalCount(*it)<<"   ---   Cache Score: "<<m_VIPTable.getRxVipAvg(*it)<<std::endl;
+                    NFD_LOG_INFO("Content Name: "<<*it<<"   ---   VIP Count: "<<m_VIPTable.getLocalCount(*it)<<"   ---   Cache Score: "<<m_VIPTable.getRxVipAvg(*it));
                     if(tempCount<CS_LIMIT)
                     {
                         m_VIPTable.decLocalCount(*it, SERVICE_RATE);
@@ -241,7 +244,7 @@ namespace nfd {
                     VIPCountPacketB.setInterestLifetime(PERIOD); // set interestB lifetime 2 seconds
                     VIPCountPacketB.setMustBeFresh(true);
                     m_VIPInterestface.expressInterest(VIPCountPacketB, bind(&VIPStrategy::onDataB, this, _1, _2),NULL,NULL);
-                    std::cout<<"on_IA_SendIB"<<VIPCountNameB<<std::endl;
+                    NFD_LOG_DEBUG("on_IA_SendIB"<<VIPCountNameB);
                 }
                 return;
             }
@@ -251,9 +254,9 @@ namespace nfd {
             void
             VIPStrategy::onDataB(const Interest& interest, const Data& data)
             {
-                //std::cout << "Interest B Received." << interest << std::endl;
+                NFD_LOG_DEBUG("Interest B Received." << interest);
                 std::string dataBContent((const char*)data.getContent().value(),data.getContent().value_size());
-                std::cout<<dataBContent<<"\n\n"<<std::endl;
+                NFD_LOG_DEBUG("on dataB Content: "<<dataBContent<<"\n\n");
                 std::istringstream f(dataBContent);
                 std::string key;
                 std::string count;
@@ -633,7 +636,7 @@ m_VIPTransTable.insert(std::pair<long,bool>(stol(iName[6].toUri()),false));
                         {
                             //std::cout<<"DATA_A: "<<data<<"CONTENT:"<<std::endl;
                             std::string dataAContent((const char*)data.getContent().value(),data.getContent().value_size());
-                            std::cout<<ingress<<" "<<dataAContent<<std::endl;
+                            NFD_LOG_DEBUG("ingress: "<<ingress<<"dataAContent: "<<dataAContent);
                             std::istringstream f(dataAContent);
                             std::string key;
                             std::string count;
@@ -705,7 +708,7 @@ m_VIPTransTable.insert(std::pair<long,bool>(stol(iName[6].toUri()),false));
                   std::string dataName = data.getName().toUri();
                   //std::cout<<"\n\n\n=========================Cache Hit Happened=========================="<<std::endl;
                   //std::cout<<"Data Name: "<<dataName<<std::endl;
-                  if(fw::VIP::VIPStrategy::getContentName(dataName).second && fw::VIP::VIPStrategy::getContentName(dataName).first.second && ingress.face.getScope() == ndn::nfd::FACE_SCOPE_LOCAL)
+                  if(ingress.face.getScope() == ndn::nfd::FACE_SCOPE_LOCAL && fw::VIP::VIPStrategy::getContentName(dataName).second && fw::VIP::VIPStrategy::getContentName(dataName).first.second)
                       {
                           //std::cout<<"Local Request Cache Hit."<<std::endl;
                           std::string contentName = fw::VIP::VIPStrategy::getContentName(dataName).first.first;
@@ -717,12 +720,12 @@ m_VIPTransTable.insert(std::pair<long,bool>(stol(iName[6].toUri()),false));
                           long duration = value.count();
                           fw::VIP::VIPStrategy::updateRxAvg(contentName,duration,1.0);
                       }
-                    
-              this->sendData(pitEntry, data, ingress);
+                //this->sendData(pitEntry, data, ingress);    
+              Strategy::afterContentStoreHit(pitEntry, ingress, data);
             }
         //:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
             
-            NFD_REGISTER_STRATEGY(VIPStrategy);
+            //NFD_REGISTER_STRATEGY(VIPStrategy);
             
             //::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
             
@@ -745,8 +748,8 @@ m_VIPTransTable.insert(std::pair<long,bool>(stol(iName[6].toUri()),false));
                 Name caliName2("/ndn/VIP/Calibrationinterest");
                 Interest calibration1(caliName1);
                 Interest calibration2(caliName2);
-                std::ifstream iNameMap("./daemon/fw/CMS_File_Configuration/name_map.txt");
-                std::ifstream iContSize("./daemon/fw/CMS_File_Configuration/content_size.txt");
+                std::ifstream iNameMap("/usr/local/etc/ndn/CMS_File_Configuration/name_map.txt");
+                std::ifstream iContSize("/usr/local/etc/ndn/CMS_File_Configuration/content_size.txt");
                 if(iNameMap&&iContSize)
                 {
                     std::string sNameMap;
@@ -759,9 +762,7 @@ m_VIPTransTable.insert(std::pair<long,bool>(stol(iName[6].toUri()),false));
                         bool isFirstChunk;
                         st>>chunkName>>contentName>>isFirstChunk;
                         m_nameMapTable.insert(std::pair<std::string,std::pair<std::string,bool>>(chunkName,std::pair<std::string,bool>(contentName,isFirstChunk)));
-                        std::cout<<chunkName<<std::endl;
-                        std::cout<<contentName<<std::endl;
-                        std::cout<<isFirstChunk<<std::endl;
+                        NFD_LOG_INFO("chunkName: " << chunkName << "\ncontentName: " << contentName << "\nisFirstchunk:" <<isFirstChunk);
                     }
                     while(getline(iContSize,sContSize))
                     {
