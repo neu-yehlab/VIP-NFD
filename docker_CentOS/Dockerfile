@@ -38,15 +38,23 @@ RUN rpm -i boost1_69_0/boost-license1_69_0-1.69.0-1.x86_64.rpm \
 RUN source scl_source enable devtoolset-8 && \
     cd /root/ && \
     git clone https://github.com/neu-yehlab/VIP-NFD.git && \
-    cd ./VIP-NFD && \
-    git checkout 4bc0dd26c9e59044f0ef56f7a305e2263ac4fe2a && \
-    cd ./nfd-0.7.0 && \
+    #cd ./VIP-NFD && \
+    #git checkout 4bc0dd26c9e59044f0ef56f7a305e2263ac4fe2a && \
+    #cd ./nfd-0.7.0 && \
     #mkdir -p websocketpp && \
     #curl -L https://github.com/cawka/websocketpp/archive/0.8.1-hotfix.tar.gz > websocketpp.tar.gz && \
     #tar xf websocketpp.tar.gz -C websocketpp/ --strip 1 && \
-    ./waf configure && \
-    ./waf && \
-    ./waf install && \
+    #./waf configure && \
+    #./waf && \
+    #./waf install && \
+    git clone https://github.com/named-data/NFD.git && \
+    cd ./NFD && \
+    git checkout NFD-0.7.0 && \
+    cp -r ../VIP-NFD/nfd-0.7.0/daemon/fw/. ./daemon/fw && \
+    cp -r ../VIP-NFD/nfd-0.7.0/daemon/table/. ./daemon/table && \
+    mkdir -p websocketpp && \
+    curl -L https://github.com/cawka/websocketpp/archive/0.8.1-hotfix.tar.gz > websocketpp.tar.gz && \
+    tar xf websocketpp.tar.gz -C websocketpp/ --strip 1 && \
     cp /usr/local/etc/ndn/nfd.conf.sample /usr/local/etc/ndn/nfd.conf && \
     cp -r ./daemon/fw/CMS_File_Configuration /usr/local/etc/ndn/
     ldconfig

@@ -39,7 +39,11 @@ RUN cd /root/ && \
     ldconfig
 RUN cd /root/ && \
     git clone https://github.com/neu-yehlab/VIP-NFD.git && \
-    cd ./VIP-NFD/NFD-NFD-0.6.6 && \
+    git clone https://github.com/named-data/NFD.git && \
+    cd ./NFD && \
+    git checkout NFD-0.7.0 && \
+    cp -r ../VIP-NFD/nfd-0.7.0/daemon/fw/. ./daemon/fw && \
+    cp -r ../VIP-NFD/nfd-0.7.0/daemon/table/. ./daemon/table && \
     mkdir -p websocketpp && \
     curl -L https://github.com/cawka/websocketpp/archive/0.8.1-hotfix.tar.gz > websocketpp.tar.gz && \
     tar xf websocketpp.tar.gz -C websocketpp/ --strip 1 && \
@@ -47,6 +51,7 @@ RUN cd /root/ && \
     ./waf && \
     ./waf install && \
     cp /usr/local/etc/ndn/nfd.conf.sample /usr/local/etc/ndn/nfd.conf && \
+    cp -r ./daemon/fw/CMS_File_Configuration /usr/local/etc/ndn/ && \
     ldconfig
 RUN cd /root/ && \
     git clone https://github.com/cmscaltech/sandie-ndn.git && \
