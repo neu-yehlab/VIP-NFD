@@ -1,7 +1,7 @@
 # VIP-NFD
 ## Introduction 
 This repo implements [VIP algorithm](https://dl.acm.org/doi/abs/10.1145/2660129.2660151?casa_token=0kABuDRdS8sAAAAA:qPlzF3Rg9s8yRwQpoqU3Nbggr-7_gAwqoG2fFuKSAPsjypPwL-ETqg-hL0-zaV2LaiDzggSR1xFi-A
-) based on [NFD-0.7.0](https://github.com/named-data/NFD/tree/NFD-0.7.0). VIP algorithm is a kind of joint forwarding and caching algorithm, so it contains both an optional forwardeing strategy and a caching policy. The forwarding part is implemented in [/NFD-0.7.0/daemon/fw/](https://github.com/neu-yehlab/VIP-NFD/tree/master/NFD-NFD-0.7.0/daemon/fw) and the caching part is implemented in [/NFD-0.7.0/daemon/table/](https://github.com/neu-yehlab/VIP-NFD/tree/master/nfd-0.7.0/daemon/table). 
+) based on [NFD-0.7.0](https://github.com/named-data/NFD/tree/NFD-0.7.0). VIP algorithm is a kind of joint forwarding and caching algorithm, so it contains both an optional forwardeing strategy and a caching policy. The forwarding part is implemented in [/nfd-0.7.0/daemon/fw/](https://github.com/neu-yehlab/VIP-NFD/tree/master/NFD-NFD-0.7.0/daemon/fw) and the caching part is implemented in [/nfd-0.7.0/daemon/table/](https://github.com/neu-yehlab/VIP-NFD/tree/master/nfd-0.7.0/daemon/table). 
 
 ## Installation
 VIP algorithm is implemented as optional forwarding strategy and caching policy in NFD. You need to install [NFD-0.7.0](https://github.com/named-data/NFD/tree/NFD-0.7.0) first.
