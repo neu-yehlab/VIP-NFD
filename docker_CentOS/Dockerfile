@@ -55,8 +55,11 @@ RUN source scl_source enable devtoolset-8 && \
     mkdir -p websocketpp && \
     curl -L https://github.com/cawka/websocketpp/archive/0.8.1-hotfix.tar.gz > websocketpp.tar.gz && \
     tar xf websocketpp.tar.gz -C websocketpp/ --strip 1 && \
+    ./waf configure && \
+    ./waf && \
+    ./waf install && \
     cp /usr/local/etc/ndn/nfd.conf.sample /usr/local/etc/ndn/nfd.conf && \
-    cp -r ./daemon/fw/CMS_File_Configuration /usr/local/etc/ndn/
+    #cp -r ./daemon/fw/CMS_File_Configuration /usr/local/etc/ndn/ && \
     ldconfig
 RUN rpm -i xrdndn-consumer-0.2.0-4.el7.x86_64.rpm \
         xrdndn-producer-0.2.0-4.el7.x86_64.rpm xrootd-ndn-fs-0.2.0-4.el7.x86_64.rpm
