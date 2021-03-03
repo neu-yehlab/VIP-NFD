@@ -162,7 +162,14 @@ VipEntry * VipEntry::getNext() const {
           }
           else {
             // TO DO: Appropriate error / exception handling
-            std::cout << "Attempt to update transmitted VIP average to neighbor failed: no neighbor with given face ID exists.\n";
+                 auto now = std::chrono::system_clock::now();
+                 auto now_s = std::chrono::time_point_cast<std::chrono::seconds>(now);
+                 auto epoch = now_s.time_since_epoch();
+                 auto value = std::chrono::duration_cast<std::chrono::seconds>(epoch);
+                 long duration = value.count();
+                 NeighborEntry neighbor_Entry(face_id, 0, 0,duration);
+                 neighbor_vector_.push_back(neighbor_Entry);
+           //std::cout << "Attempt to update transmitted VIP average to neighbor failed: no neighbor with given face ID exists.\n";
           }
         }
         }}}

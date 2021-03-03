@@ -58,8 +58,8 @@ RUN source scl_source enable devtoolset-8 && \
     ./waf configure && \
     ./waf && \
     ./waf install && \
-    cp /usr/local/etc/ndn/nfd.conf.sample /usr/local/etc/ndn/nfd.conf && \
-    #cp -r ./daemon/fw/CMS_File_Configuration /usr/local/etc/ndn/ && \
+    cp /root/VIP-NFD/nfd-0.7.0/nfd.conf.sample /usr/local/etc/ndn/nfd.conf && \
+    cp -r /root/VIP-NFD/nfd-0.7.0/daemon/fw/CMS_File_Configuration /usr/local/etc/ndn/ && \
     ldconfig
 RUN rpm -i xrdndn-consumer-0.2.0-4.el7.x86_64.rpm \
         xrdndn-producer-0.2.0-4.el7.x86_64.rpm xrootd-ndn-fs-0.2.0-4.el7.x86_64.rpm

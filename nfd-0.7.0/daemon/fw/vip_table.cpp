@@ -8,7 +8,7 @@
 namespace nfd {
     namespace fw {
         namespace VIP{
-
+//static uint16_t vipASegment = 0;
 // TO DO: Check for hash conflicts (create getEntry and use it everywhere), implement checkObject function, implement update function
 
 uint16_t nextPrime(uint16_t n){ // A very hacky nextPrime function that should be enough for our purposes
@@ -327,19 +327,68 @@ void VipTable::resize() {
   }
   delete[] old_table;
 }
+
+uint16_t VipTable::getVIPASeg(const int face_id)
+{
+  std::map< const int, uint16_t >::iterator iter;
+  if((iter=vip_A_segment_.find(face_id))!=vip_A_segment_.end())
+  {
+    return iter->second;
+  }
+  else
+  {
+    vip_A_segment_.insert(std::pair<const int, uint16_t>(face_id,0));
+    return 0;
+  }
+}
+
+
+void VipTable::resetVIPASeg()
+{
+  std::map< const int, uint16_t >::iterator iter;
+  for(iter=vip_A_segment_.begin();iter!=vip_A_segment_.end();iter++)
+  {
+    iter->second = 0;
+  } 
+}
+   
+void VipTable::setVIPASeg(const int face_id, uint16_t seg)
+{
+  std::map< const int, uint16_t >::iterator iter;
+  if((iter=vip_A_segment_.find(face_id))!=vip_A_segment_.end())
+  {
+    iter->second = seg;
+  }
+  else
+  {
+    vip_A_segment_.insert(std::pair<const int, uint16_t>(face_id,seg));
+  }
+
+}
             
-            std::string VipTable::generateDataAContent(){
+            std::string VipTable::generateDataAContent(const int face_id){
                 if(catalog_size_==0){
                     return "0\t0\n";
                 }
                 else{
                     std::string content;
                     
-                    for(int i = 0; i<table_size_;++i){
+                    for(int i = this->getVIPASeg(face_id); i<table_size_;++i){
                         if(vip_table_[i]!=NULL){//have VipEntry arry
-                            content = content+(vip_table_[i]->getKey())+"\t"+std::to_string(vip_table_[i]->getLocalCount())+"\n";
+                            std::string append = (vip_table_[i]->getKey())+"\t"+std::to_string(vip_table_[i]->getLocalCount())+"\n";
+                            //content = content+(vip_table_[i]->getKey())+"\t"+std::to_string(vip_table_[i]->getLocalCount())+"\n";
+                            if(content.size()+append.size()> 8800)
+                            {
+                              this->setVIPASeg(face_id,(uint16_t)i);
+                              return content; 
+                            }
+                            else
+                            {
+                              content+=append; 
+                            }
                         }
                     }
+                    this->setVIPASeg(face_id,0);
                     return content;
                 }
             }
