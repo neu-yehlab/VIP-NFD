@@ -377,7 +377,7 @@ void VipTable::setVIPASeg(const int face_id, uint16_t seg)
                         if(vip_table_[i]!=NULL){//have VipEntry arry
                             std::string append = (vip_table_[i]->getKey())+"\t"+std::to_string(vip_table_[i]->getLocalCount())+"\n";
                             //content = content+(vip_table_[i]->getKey())+"\t"+std::to_string(vip_table_[i]->getLocalCount())+"\n";
-                            if(content.size()+append.size()> 8800)
+                            if(content.size()+append.size()> 7900)
                             {
                               this->setVIPASeg(face_id,(uint16_t)i);
                               return content; 
