@@ -380,6 +380,7 @@ void VipTable::setVIPASeg(const int face_id, uint16_t seg)
                             if(content.size()+append.size()> 7900)
                             {
                               this->setVIPASeg(face_id,(uint16_t)i);
+                              content += "cont\tinue\n";
                               return content; 
                             }
                             else

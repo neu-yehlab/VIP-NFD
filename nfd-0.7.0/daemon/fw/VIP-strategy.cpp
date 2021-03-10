@@ -405,8 +405,8 @@ namespace nfd {
                           this->sendInterest(pitEntry, FaceEndpoint(*(this->getFace(std::stol(interestName[6].toUri()))), 0), interest);
                           return;
                         }
-                        NFD_LOG_DEBUG("first VIP A packet received");
-                        
+                        NFD_LOG_DEBUG("first VIP A packet from controller received");
+                        //first VIP A interest
                         for (const auto& nexthop : fibEntry.getNextHops())//multicast to all possible faces except those of locoal controller
                         {
                             //std::cout << "nexthop loop" <<std::endl;
@@ -661,7 +661,6 @@ namespace nfd {
                             //NFD_LOG_DEBUG("Receive VIPA data: "<<data<<" from neighbor: " << ingress.face.getId()<< " and send to local controller");
                             std::string dataAContent((const char*)data.getContent().value(),data.getContent().value_size());
                             NFD_LOG_DEBUG("Receive VIPA data: "<<data<<" from neighbor: " << ingress.face.getId()<< " and send to local controller");
-                            NFD_LOG_TRACE("ingress: "<<ingress<<"dataAContent: "<<dataAContent);
                             std::istringstream f(dataAContent);
                             std::string key;
                             std::string count;
@@ -680,13 +679,25 @@ namespace nfd {
                                 int updateCount = 0;
                                 do
                                 {
-                                    if(!m_VIPTable.checkEntry(key))
+                                    if(key == "cont"&& count == "inue")
+                                    {
+                                        Name VIPCountName(m_VIPNameA);
+                                        VIPCountName.appendTimestamp();
+                                        Interest VIPCountPacket(VIPCountName.append(to_string(ingress.face.getId())));
+                                        VIPCountPacket.setInterestLifetime(PERIOD); // 2 seconds
+                                        VIPCountPacket.setMustBeFresh(true);
+                                        this->VIPCountSend(VIPCountPacket);
+                                        return;
+                                    }
+                                    else if(!m_VIPTable.checkEntry(key))
                                     {
                                         m_virtualCacheTable.push_back(key);
                                     }
                                     ++updateCount;
                                     m_VIPTable.setNeighborCount(key, std::stol(data.getName()[5].toUri()), std::stod(count));//******************
                                 }while (std::getline(f, key, '\t')&&std::getline(f,count,'\n'));
+                                
+                                /*
                                 if(updateCount < m_VIPTable.getSize())
                                 {
                                   //Interest interest = this->generateVIPCountInterestA();
@@ -696,7 +707,7 @@ namespace nfd {
                                   VIPCountPacket.setInterestLifetime(PERIOD); // 2 seconds
                                   VIPCountPacket.setMustBeFresh(true);
                                   this->VIPCountSend(VIPCountPacket);
-                                }
+                                }*/
                             }
                                 m_VIPTransTable[ingress.face.getId()]=true;
                             
