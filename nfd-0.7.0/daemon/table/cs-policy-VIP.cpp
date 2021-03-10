@@ -43,8 +43,9 @@ namespace nfd {
             NFD_REGISTER_CS_POLICY(VIPPolicy);
             
             VIPPolicy::VIPPolicy()
-            : Policy(POLICY_NAME)
+            : Policy(POLICY_NAME), m_VIPCountPrefix("/ndn/VIP/Count"), m_xrootdPrefix("/ndn/xrootd")
             {
+
             }
             
             void
@@ -79,7 +80,8 @@ namespace nfd {
                 }
                 */            
                 //else if(std::regex_match (dataName, std::regex("^/ndn/VIP/(.*)")))//cache the packets that use VIP algorithm.
-                if(std::regex_match (dataName, std::regex("^/ndn/xrootd/(.*)")))
+                //if(std::regex_match (dataName, std::regex("^/ndn/xrootd/(.*)")))
+                if(m_xrootdPrefix.isPrefixOf(i->getName()))
                 {
                     std::string contentName;
                     if(fw::VIP::VIPStrategy::getContentName(dataName).second)//check the content name of received chunk; if it exists in the mapping table, get the name
@@ -145,8 +147,9 @@ namespace nfd {
                     }
                     //std:string obName = dataName.substr(0，dataName.rfind("/"));
                 }
-		else if(std::regex_match (dataName, std::regex("^/ndn/VIP/Count/(.*)")))//no cache for control packet
-                {
+		//else if(std::regex_match (dataName, std::regex("^/ndn/VIP/Count/(.*)")))//no cache for control packet
+                else if(m_VIPCountPrefix.isPrefixOf(i->getName()))
+                {   
                     NFD_LOG_DEBUG("CS:New_VIP_Control_Data_Name:"<<dataName);
                     this->emitSignal(beforeEvict, i);
                 }
@@ -160,13 +163,14 @@ namespace nfd {
             {
                 std::string dataName = i->getName().toUri();
                 std::string contentName;
+                std::string shortDataName = dataName.substr(0,dataName.rfind('/'));
                 if(fw::VIP::VIPStrategy::getContentName(dataName).second)//check the content name of erased chunk
                 {
                     contentName = fw::VIP::VIPStrategy::getContentName(dataName).first.first;
                 }
-                else if (fw::VIP::VIPStrategy::getContentName(dataName.substr(0,dataName.rfind('/'))).second)
+                else if (fw::VIP::VIPStrategy::getContentName(shortDataName).second)
                 {
-                contentName = fw::VIP::VIPStrategy::getContentName(dataName.substr(0,dataName.rfind('/'))).first.first;
+                contentName = fw::VIP::VIPStrategy::getContentName(shortDataName).first.first;
                 }
                 else
                 {

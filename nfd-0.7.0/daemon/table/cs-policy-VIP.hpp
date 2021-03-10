@@ -39,6 +39,7 @@
 #include <boost/multi_index/member.hpp>
 #include <fw/VIP-strategy.hpp>
 #include <fw/VIP_configure.hpp>
+//#include <core/common.hpp>
 namespace nfd {
     namespace cs {
         namespace VIPcache {
@@ -130,6 +131,8 @@ namespace nfd {
             private:
                  static csVIPTable m_csVIPTable;
                  long m_contentCacheSize=0;
+                 Name m_VIPCountPrefix;
+                 Name m_xrootdPrefix;
                 //static int m_i;
             };
             

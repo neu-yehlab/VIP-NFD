@@ -179,6 +179,10 @@ namespace nfd {
                 std::list<std::string> m_virtualCacheTable;//how to add elements and avoid repeating。 Element adding has not finished.
                 static std::unordered_map<std::string, std::pair<std::string,bool>> m_nameMapTable;
                 static std::unordered_map<std::string,double> m_contentSizeTable;
+                Name m_VIPCountPrefix;
+                Name m_VIPCountAPrefix;
+                Name m_VIPCountBPrefix;               
+                
             };
             
             

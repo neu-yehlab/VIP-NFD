@@ -38,7 +38,6 @@
 #include <sstream>
 #include <cmath>
 #include "common/logger.hpp"
-
 namespace nfd {
     namespace fw {
         namespace VIP{
@@ -378,7 +377,28 @@ namespace nfd {
                 }
             }
             //::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-            
+            /*
+            void
+            VIPStrategy::afterReceiveInterest(const FaceEndpoint& ingress, const Interest& interest,
+                                              const shared_ptr<pit::Entry>& pitEntry)
+            {
+            const fib::Entry& fibEntry = this->lookupFib(*pitEntry);
+            if(1)    
+               {            
+                    for (const auto& nexthop : fibEntry.getNextHops())
+                    {   
+                        Face& outFace = nexthop.getFace();
+                        if (!wouldViolateScope(ingress.face, interest, outFace) && canForwardToLegacy(*pitEntry, outFace))
+                        {
+                            this->sendInterest(pitEntry, FaceEndpoint(outFace, 0), interest);
+                            return;
+                        }
+                    }
+               }    
+            }
+            */
+
+
             void
             VIPStrategy::afterReceiveInterest(const FaceEndpoint& ingress, const Interest& interest,
                                               const shared_ptr<pit::Entry>& pitEntry)
@@ -389,12 +409,57 @@ namespace nfd {
                 //std::cout<<"\n\n\n=========================Interest Packet Received=========================="<<std::endl;
                 NFD_LOG_DEBUG("afterReceiveInterest --- Face ID: "<<m_interestFaceId<<"   ---   Data Face ID: "<<m_dataFaceId<<"  "<<interestString);
                 const fib::Entry& fibEntry = this->lookupFib(*pitEntry);
-		if(std::regex_match(interestString, std::regex("^/ndn/VIP/(.*)")))
-	        {
-		if(std::regex_match(interestString, std::regex("^/ndn/VIP/Count/A/(.*)") ) && (m_interestFaceId*m_dataFaceId)!=0)//if get interestA
-                 //if(Name("/ndn/VIP/Count")&& (m_interestFaceId*m_dataFaceId)!=0)//if get interest
+		//if(std::regex_match(interestString, std::regex("^/ndn/VIP/(.*)")))
+	       std::pair<std::pair<std::string,bool>,bool> objPair = VIPStrategy::getContentName(interestString.substr(0,interestString.rfind('/')));
+        
+               if(objPair.second)  
+               {
+                    std::string objName = objPair.first.first;
 
-		{
+                    if(pitEntry->hasOutRecords())
+                    {
+                        return;
+                    }
+                    double maxTxAvg = 0;
+                    unsigned long maxTxFaceId=0;
+                    for (const auto& nexthop : fibEntry.getNextHops())
+                    {
+                        Face& outFace = nexthop.getFace();
+                        if (!wouldViolateScope(ingress.face, interest, outFace) && canForwardToLegacy(*pitEntry, outFace))
+                        {
+                            double temp = m_VIPTable.getNeighborTxAvg(objName, outFace.getId());
+                            if(temp>maxTxAvg)
+                            {
+                                maxTxAvg = temp;
+                                maxTxFaceId = outFace.getId();
+                            }
+                        }
+                    }
+                    if(maxTxAvg)
+                    {
+                        this->sendInterest(pitEntry, FaceEndpoint(*(this->getFace(maxTxFaceId)), 0), interest);
+                        return;
+                    }
+                    else
+                    {
+                        for (const auto& nexthop : fibEntry.getNextHops())
+                        {
+                            Face& outFace = nexthop.getFace();
+                            if (!wouldViolateScope(ingress.face, interest, outFace) && canForwardToLegacy(*pitEntry, outFace))
+                            {
+                                this->sendInterest(pitEntry, FaceEndpoint(outFace, 0), interest);
+                                return;
+                            }
+                        }
+                    }
+                }
+
+                else if(m_VIPCountPrefix.isPrefixOf(interestName))
+                {
+		  //if(std::regex_match(interestString, std::regex("^/ndn/VIP/Count/A/(.*)") ) && (m_interestFaceId*m_dataFaceId)!=0)//if get interestA
+                  //if(Name("/ndn/VIP/Count")&& (m_interestFaceId*m_dataFaceId)!=0)//if get interest
+                  if(m_VIPCountAPrefix.isPrefixOf(interestName) && (m_interestFaceId*m_dataFaceId)!=0)//if get interest VIP A
+		  {
                                 
                     //std::cout<<"packet A"<<std::endl;
                                 
@@ -434,9 +499,15 @@ namespace nfd {
                         //std::cout<<"<<IA"<<interestName<<std::endl;
                         return;
                     }
-                }
-                            
-                else if(std::regex_match(interestString, std::regex("^/ndn/VIP/Count/B/(.*)"))&&(m_interestFaceId*m_dataFaceId)!=0)//interest B
+                  }
+                
+
+
+
+
+            
+                //else if(std::regex_match(interestString, std::regex("^/ndn/VIP/Count/B/(.*)"))&&(m_interestFaceId*m_dataFaceId)!=0)//interest B
+                else if(m_VIPCountBPrefix.isPrefixOf(interestName) && (m_interestFaceId*m_dataFaceId)!=0)
                 {
                     //std::cout<<"packet B"<<std::endl;
                     if(ingress.face.getId()==m_interestFaceId)//if comes from local controller
@@ -468,9 +539,10 @@ namespace nfd {
                     m_dataFaceId=ingress.face.getId();
                     return;
                 }
-                }           
-                else if(VIPStrategy::getContentName(interestString).second)//actual interest
-                {
+              }
+      
+              else if(VIPStrategy::getContentName(interestString).second)//actual interest
+              {
                     std::string objName = VIPStrategy::getContentName(interestString).first.first;
                     //if(std::regex_match (interestString, std::regex("^(.*)/1$") )&&ingress.face.getScope() == ndn::nfd::FACE_SCOPE_LOCAL)
                     //std::cout << "actual interst received" << std::endl;            
@@ -536,14 +608,7 @@ namespace nfd {
                                 maxTxAvg = temp;
                                 maxTxFaceId = outFace.getId();
                             }
-                                        //this->sendInterest(pitEntry, FaceEndpoint(outFace, 0), interest);
-                            /*if(outFace.getScope() == ndn::nfd::FACE_SCOPE_LOCAL)//if this forwarder is on producer node
-                           {
-                             //printf("\nproducer for interest\n");
-                             //std::string objName = VIPStrategy::getContentName(interestString).first.first;
-                             m_VIPTable.decLocalCount(objName,100.0);
-                             break;                                                   
-                           }*/
+                         
 			}
                     }
                     if(maxTxAvg)
@@ -565,55 +630,6 @@ namespace nfd {
                         }
                     }
                 }
-
-                else if(VIPStrategy::getContentName(interestString.substr(0,interestString.rfind('/'))).second)
-                {
-                    std::string objName = VIPStrategy::getContentName(interestString.substr(0,interestString.rfind('/'))).first.first;
-                
-                    if(pitEntry->hasOutRecords())
-                    {
-                        return;
-                    }
-                    double maxTxAvg = 0;
-                    unsigned long maxTxFaceId=0;
-                    for (const auto& nexthop : fibEntry.getNextHops())
-                    {
-                        Face& outFace = nexthop.getFace();
-                        if (!wouldViolateScope(ingress.face, interest, outFace) && canForwardToLegacy(*pitEntry, outFace))
-                        {
-                            auto now = std::chrono::system_clock::now();
-                            auto now_ms = std::chrono::time_point_cast<std::chrono::seconds>(now);
-                            auto epoch = now_ms.time_since_epoch();
-                            auto value = std::chrono::duration_cast<std::chrono::seconds>(epoch);
-                            long duration = value.count();
-                            m_VIPTable.updateNeighborTxAvg(objName, outFace.getId(), duration, 0);
-                            double temp = m_VIPTable.getNeighborTxAvg(objName, outFace.getId());
-                            if(temp>maxTxAvg)
-                            {
-                                maxTxAvg = temp;
-                                maxTxFaceId = outFace.getId();
-                            }
-                            //this->sendInterest(pitEntry, FaceEndpoint(outFace, 0), interest);
-                        }
-                    }
-                    if(maxTxAvg)
-                    {
-                        this->sendInterest(pitEntry, FaceEndpoint(*(this->getFace(maxTxFaceId)), 0), interest);
-                    }
-                    else
-                    {
-                        for (const auto& nexthop : fibEntry.getNextHops())
-                        {
-                            Face& outFace = nexthop.getFace();
-                            if (!wouldViolateScope(ingress.face, interest, outFace) && canForwardToLegacy(*pitEntry, outFace))
-                            {
-                                this->sendInterest(pitEntry, FaceEndpoint(outFace, 0), interest);
-                                //this->rejectPendingInterest(pitEntry);
-                                return;
-                            }
-                        }
-                    }
-                }
                 else
                 {
                     for (const auto& nexthop : fibEntry.getNextHops())
@@ -622,13 +638,12 @@ namespace nfd {
                         if (!wouldViolateScope(ingress.face, interest, outFace) && canForwardToLegacy(*pitEntry, outFace))
                         {
                             this->sendInterest(pitEntry, FaceEndpoint(outFace, 0), interest);
-                            //this->rejectPendingInterest(pitEntry);
                             return;
                         }
                     }
                 }
             }
-            
+// */          
             //:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
             
             void
@@ -641,7 +656,8 @@ namespace nfd {
 		//std::cout<<"\n\n\n=========================Received a Data Packet=========================="<<std::endl;
                 //std::cout<<"Data Name: "<<dataString<<std::endl;
                 //if it is control packets
-                if(dataName.size()>=7&&std::regex_match (dataString, std::regex("^/ndn/VIP/Count/(.*)") ))
+                //if(dataName.size()>=7&&std::regex_match (dataString, std::regex("^/ndn/VIP/Count/(.*)") ))
+                if(dataName.size()>=7 && m_VIPCountPrefix.isPrefixOf(dataName)) //[[unlikely]]
                 {
                     //std::cout<<"\n\n\n------------------------It is a Control Packet--------------------------"<<std::endl;
                     this->setExpiryTimer(pitEntry,PERIOD);
@@ -656,7 +672,8 @@ namespace nfd {
                     else//if data comes from remote NFD/applications
                     {
                         this->sendData(pitEntry,data,FaceEndpoint(*(this->getFace(m_interestFaceId)), 0));
-                        if(std::regex_match(dataString, std::regex("^/ndn/VIP/Count/A/(.*)") ))
+                        //if(std::regex_match(dataString, std::regex("^/ndn/VIP/Count/A/(.*)") ))
+                        if(m_VIPCountAPrefix.isPrefixOf(dataName))
                         {
                             //NFD_LOG_DEBUG("Receive VIPA data: "<<data<<" from neighbor: " << ingress.face.getId()<< " and send to local controller");
                             std::string dataAContent((const char*)data.getContent().value(),data.getContent().value_size());
@@ -716,7 +733,7 @@ namespace nfd {
                     }
                     
                 }
-                else//actual packets
+                else //[[likely]] //actual packets
                 {
                     /*
                     if(VIPStrategy::getContentName(interestString).second && ingress.face.getId()==m_dataFaceId && VIPStrategy::getContentName(interestString).first.second)//if data name is registered && it comes from local controller && it is first chunk
@@ -778,7 +795,7 @@ namespace nfd {
             //::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
             
             VIPStrategy::VIPStrategy(Forwarder& forwarder,const Name& name)
-            : Strategy(forwarder),m_VIPInterestface(getGlobalIoService()),m_VIPDataface(getGlobalIoService()),m_VIPNameA(VIPAName),m_VIPNameB(VIPBName)
+            : Strategy(forwarder),m_VIPInterestface(getGlobalIoService()),m_VIPDataface(getGlobalIoService()),m_VIPNameA(VIPAName),m_VIPNameB(VIPBName),m_VIPCountPrefix("/ndn/VIP/Count"),m_VIPCountAPrefix("/ndn/VIP/Count/A"),m_VIPCountBPrefix("/ndn/VIP/Count/B")
             {
                
                  
