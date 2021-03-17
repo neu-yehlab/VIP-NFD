@@ -113,7 +113,7 @@ namespace nfd {
                 generateVIPCountDataA(Name nameIA);
                 shared_ptr<Data>
                 generateVIPCountDataB(Name nameIB);
-                static std::pair<std::pair<std::string,bool>,bool> getContentName(std::string chunkName);
+                static std::pair<std::pair<std::string,bool>,bool> getContentName(Name chunkName);
                 static std::pair<double,bool> getContentSize(std::string contentName);
                 inline static void incLocalCount(std::string key, double amount)
                 {
@@ -177,11 +177,13 @@ namespace nfd {
                 uint64_t m_dataFaceId=0;//data sending face of the controller
                 static VipTable m_VIPTable;
                 std::list<std::string> m_virtualCacheTable;//how to add elements and avoid repeating。 Element adding has not finished.
-                static std::unordered_map<std::string, std::pair<std::string,bool>> m_nameMapTable;
+                static std::unordered_map<Name, std::pair<std::string,bool>> m_nameMapTable;
                 static std::unordered_map<std::string,double> m_contentSizeTable;
                 Name m_VIPCountPrefix;
                 Name m_VIPCountAPrefix;
-                Name m_VIPCountBPrefix;               
+                Name m_VIPCountBPrefix;
+                Name m_calibrationInterestName;
+                Name m_calibrationDataName;               
                 
             };
             

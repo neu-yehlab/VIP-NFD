@@ -71,7 +71,7 @@ namespace nfd {
             void
             VIPPolicy::doAfterInsert(EntryRef i)
             {
-                std::string dataName = i->getName().toUri();
+                Name dataName = i->getName();
 		/*
 		else if(std::regex_match (dataName, std::regex("^/ndn/VIP/Count/(.*)")))//no cache for control packet
                 {
@@ -81,16 +81,16 @@ namespace nfd {
                 */            
                 //else if(std::regex_match (dataName, std::regex("^/ndn/VIP/(.*)")))//cache the packets that use VIP algorithm.
                 //if(std::regex_match (dataName, std::regex("^/ndn/xrootd/(.*)")))
-                if(m_xrootdPrefix.isPrefixOf(i->getName()))
+                if(m_xrootdPrefix.isPrefixOf(dataName))
                 {
                     std::string contentName;
-                    if(fw::VIP::VIPStrategy::getContentName(dataName).second)//check the content name of received chunk; if it exists in the mapping table, get the name
+                    if(fw::VIP::VIPStrategy::getContentName(dataName.getPrefix(dataName.npos-1)).second)//if the prefix name exists
+                    {
+                        contentName = fw::VIP::VIPStrategy::getContentName(dataName.getPrefix(dataName.npos-1)).first.first;
+                    }
+                    else if(fw::VIP::VIPStrategy::getContentName(dataName).second)//check the content name of received chunk; if it exists in the mapping table, get the name
                     {
                         contentName = fw::VIP::VIPStrategy::getContentName(dataName).first.first;
-                    }
-                    else if(fw::VIP::VIPStrategy::getContentName(dataName.substr(0,dataName.rfind("/"))).second)//if the prefix name exists
-                    {
-                        contentName = fw::VIP::VIPStrategy::getContentName(dataName.substr(0,dataName.rfind("/"))).first.first;
                     }
                     else//unregistered
                     {
@@ -106,9 +106,9 @@ namespace nfd {
                     {
                         //std::cout<<"following actual data block insert\n"<<std::endl;
                         //std::cout<<"_________________________\nchunk_size:  "<<this->getCs()->size()<<"\nblock_size:  "<<m_contentCacheSize<<"\n\n\n"<<std::endl;
-                        m_csVIPTable.modify(it, [i,dataName](csVIPEntry& p)
+                        m_csVIPTable.modify(it, [i](csVIPEntry& p)
                                             {
-                            p.m_fileLevelTable.insert(std::pair<std::string,EntryRef>(dataName,i));
+                            p.m_fileLevelTable.push_front(i);
                                                             });
                         //BOOST_ASSERT(this->getCs()->size() <= CS_LIMIT);//enough space, just cache this chunk
                     }
@@ -148,7 +148,8 @@ namespace nfd {
                     //std:string obName = dataName.substr(0，dataName.rfind("/"));
                 }
 		//else if(std::regex_match (dataName, std::regex("^/ndn/VIP/Count/(.*)")))//no cache for control packet
-                else if(m_VIPCountPrefix.isPrefixOf(i->getName()))
+                //else if(m_VIPCountPrefix.isPrefixOf(dataName))
+                else //unregistered data or control data, delete
                 {   
                     NFD_LOG_DEBUG("CS:New_VIP_Control_Data_Name:"<<dataName);
                     this->emitSignal(beforeEvict, i);
@@ -161,16 +162,17 @@ namespace nfd {
             void
             VIPPolicy::doBeforeErase(EntryRef i)
             {
-                std::string dataName = i->getName().toUri();
+                /*
+                Name dataName = i->getName();
                 std::string contentName;
-                std::string shortDataName = dataName.substr(0,dataName.rfind('/'));
-                if(fw::VIP::VIPStrategy::getContentName(dataName).second)//check the content name of erased chunk
+                //std::string shortDataName = dataName.substr(0,dataName.rfind('/'));
+                if(fw::VIP::VIPStrategy::getContentName(dataName.getPrefix(dataName.npos-1)).second)//check the content name of erased chunk
                 {
-                    contentName = fw::VIP::VIPStrategy::getContentName(dataName).first.first;
+                    contentName = fw::VIP::VIPStrategy::getContentName(dataName.getPrefix(dataName.npos-1)).first.first;
                 }
-                else if (fw::VIP::VIPStrategy::getContentName(shortDataName).second)
+                else if (fw::VIP::VIPStrategy::getContentName(dataName).second)
                 {
-                contentName = fw::VIP::VIPStrategy::getContentName(shortDataName).first.first;
+                contentName = fw::VIP::VIPStrategy::getContentName(dataName).first.first;
                 }
                 else
                 {
@@ -185,6 +187,7 @@ namespace nfd {
                     m_csVIPTable.get<0>().erase(it);
                 --m_contentCacheSize;
                 return;
+                */
             }
             
             void
@@ -213,9 +216,13 @@ namespace nfd {
                     for(auto iter = it->m_fileLevelTable.begin(); iter != it->m_fileLevelTable.end(); ++iter)
                     { 
                         //std::cout<<"Evicted Chunk Name: "<<iter->second->getName().toUri()<<std::endl;
-                        this->emitSignal(beforeEvict, iter->second);
-                    
+                        this->emitSignal(beforeEvict, *iter);
+                            
                     }
+                    m_csVIPTable.get<1>().modify(it, [](csVIPEntry& p)
+                                        {
+                                            p.m_fileLevelTable.clear();
+                                                                });                                                 
                     m_csVIPTable.get<1>().erase(it);
                 }
               

@@ -65,7 +65,7 @@ namespace nfd {
                 inline csVIPEntry(std::string objectName_, Policy::EntryRef it_)
                 {
                     m_objectName = objectName_;
-                    m_fileLevelTable={{it_->getName().toUri(),it_}};
+                    m_fileLevelTable.push_front(it_);
                     
                 }
                 inline csVIPEntry(std::string objectName_,double rxVIPAvg_)
@@ -79,11 +79,11 @@ namespace nfd {
                     m_objectName=objectName_;
                     m_cacheScore=rxVIPAvg_;
                     //m_VIPCount=VIPCount_;
-                    m_fileLevelTable={{it_->getName().toUri(),it_}};
+                    m_fileLevelTable.push_front(it_);
                    
                 }
                 std::string m_objectName;
-                std::map<std::string,Policy::EntryRef> m_fileLevelTable;
+                std::list<Policy::EntryRef> m_fileLevelTable;
                 double m_cacheScore=0;
                 //double m_VIPCount=0;
             };

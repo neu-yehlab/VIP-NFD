@@ -45,10 +45,10 @@ namespace nfd {
             NFD_REGISTER_STRATEGY(VIPStrategy);
             
             VipTable VIPStrategy::m_VIPTable(100);
-            std::unordered_map<std::string,std::pair<std::string,bool>> VIPStrategy::m_nameMapTable(100);
+            std::unordered_map<Name,std::pair<std::string,bool>> VIPStrategy::m_nameMapTable(300);
             std::unordered_map<std::string,double> VIPStrategy::m_contentSizeTable(100);
             //:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-            std::pair<std::pair<std::string,bool>,bool> VIPStrategy::getContentName(std::string chunkName)
+            std::pair<std::pair<std::string,bool>,bool> VIPStrategy::getContentName(Name chunkName)
             {
                 std::pair<std::pair<std::string,bool>,bool> out;
                 auto it = m_nameMapTable.find(chunkName);
@@ -189,6 +189,7 @@ namespace nfd {
 		    {
                       m_VIPTable.decLocalCount(*it, SERVICE_RATE);
                     } 
+                    //std::cout << "Content Name: "<<*it<<"   ---   VIP Count: "<<m_VIPTable.getLocalCount(*it)<<"   ---   Cache Score: "<<m_VIPTable.getRxVipAvg(*it) <<std::endl;
                     NFD_LOG_INFO("Content Name: "<<*it<<"   ---   VIP Count: "<<m_VIPTable.getLocalCount(*it)<<"   ---   Cache Score: "<<m_VIPTable.getRxVipAvg(*it));
                     if(tempCount<CS_LIMIT)
                     {
@@ -262,9 +263,9 @@ namespace nfd {
             void
             VIPStrategy::onDataB(const Interest& interest, const Data& data)
             {
-                NFD_LOG_DEBUG("Interest B Received." << interest);
+                //NFD_LOG_DEBUG("Interest B Received." << interest);
                 std::string dataBContent((const char*)data.getContent().value(),data.getContent().value_size());
-                NFD_LOG_DEBUG("on dataB Content: "<<dataBContent<<"\n\n");
+                NFD_LOG_DEBUG("on dataB Content: "<<dataBContent);
                 std::istringstream f(dataBContent);
                 std::string key;
                 std::string count;
@@ -277,6 +278,8 @@ namespace nfd {
                 }
                 else
                 {
+                    NFD_LOG_DEBUG("valid dataB Content, increase local VIP Count of: " << key << " by "<<stod(count) << "; also inc rxAvg by " << stod(count));
+                    //std::cout << "valid dataB Content, increase local VIP Count of: " << key << " by "<<stod(count) << "; also inc rxAvg by " << stod(count) << std::endl;
                     if(!m_VIPTable.checkEntry(key))
                     {
                         m_virtualCacheTable.push_back(key);
@@ -405,12 +408,12 @@ namespace nfd {
             {
 
                 Name interestName = interest.getName();
-                std::string interestString = interestName.toUri();
+                //std::string interestString = interestName.toUri();
                 //std::cout<<"\n\n\n=========================Interest Packet Received=========================="<<std::endl;
-                NFD_LOG_DEBUG("afterReceiveInterest --- Face ID: "<<m_interestFaceId<<"   ---   Data Face ID: "<<m_dataFaceId<<"  "<<interestString);
+                NFD_LOG_DEBUG("afterReceiveInterest --- Face ID: "<<m_interestFaceId<<"   ---   Data Face ID: "<<m_dataFaceId<<"  "<<interestName);
                 const fib::Entry& fibEntry = this->lookupFib(*pitEntry);
 		//if(std::regex_match(interestString, std::regex("^/ndn/VIP/(.*)")))
-	       std::pair<std::pair<std::string,bool>,bool> objPair = VIPStrategy::getContentName(interestString.substr(0,interestString.rfind('/')));
+	       std::pair<std::pair<std::string,bool>,bool> objPair = VIPStrategy::getContentName(interestName.getPrefix(interestName.npos-1));
         
                if(objPair.second)  
                {
@@ -529,26 +532,27 @@ namespace nfd {
                                 
                 }
                             
-                else if(interestString=="/ndn/VIP/Calibrationinterest")
+                else if(interestName==m_calibrationInterestName)//"/ndn/VIP/Calibrationinterest")
                 {
                     m_interestFaceId=ingress.face.getId();
                     return;
                 }
-                else if(interestString=="/ndn/VIP/Calibrationdata")
+                else if(interestName==m_calibrationDataName)//"/ndn/VIP/Calibrationdata")
                 {
                     m_dataFaceId=ingress.face.getId();
                     return;
                 }
               }
       
-              else if(VIPStrategy::getContentName(interestString).second)//actual interest
+              else if(VIPStrategy::getContentName(interestName).second)//actual interest
               {
-                    std::string objName = VIPStrategy::getContentName(interestString).first.first;
+                    std::string objName = VIPStrategy::getContentName(interestName).first.first;
                     //if(std::regex_match (interestString, std::regex("^(.*)/1$") )&&ingress.face.getScope() == ndn::nfd::FACE_SCOPE_LOCAL)
                     //std::cout << "actual interst received" << std::endl;            
-                    if( VIPStrategy::getContentName(interestString).first.second)//if insterest for first chunk
+                    if( VIPStrategy::getContentName(interestName).first.second)//if insterest for first chunk
                     {   
-                        NFD_LOG_DEBUG("Afterreceive an actual interest packet: " << interestString << "  as the first chunk of content: " << objName);
+                        NFD_LOG_DEBUG("Afterreceive an actual interest packet: " << interestName << "  as the first chunk of content: " << objName);
+                        //std::cout<<"Afterreceive an actual interest packet: " << interestName << "  as the first chunk of content: " << objName<<std::endl;
                         if(!m_VIPTable.checkEntry(objName))
                         {
                             m_virtualCacheTable.push_back(objName);
@@ -571,7 +575,7 @@ namespace nfd {
                     }
                     else //not the first chunk
                     {
-                         NFD_LOG_DEBUG("Afterreceive an actual interest packet: " << interestString << "  not the first chunk of content: " << objName);
+                         NFD_LOG_DEBUG("Afterreceive an actual interest packet: " << interestName << "  not the first chunk of content: " << objName);
                         //std::cout<<"Following requests for data: "<<objName<<"\n"<<std::endl;
                     }
                     //:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -769,13 +773,15 @@ namespace nfd {
             void VIPStrategy::afterContentStoreHit(const shared_ptr<pit::Entry>& pitEntry,
                                            const FaceEndpoint& ingress, const Data& data)
             {
-		
-                  std::string dataName = data.getName().toUri();
+	          NFD_LOG_DEBUG("afterContentStoreHit with data: "<<data);	
+                  //std::string dataName = data.getName().toUri();
+                  Name dataName = data.getName();
                   //std::cout<<"\n\n\n=========================Cache Hit Happened=========================="<<std::endl;
                   //std::cout<<"Data Name: "<<dataName<<std::endl;
                   if(ingress.face.getScope() == ndn::nfd::FACE_SCOPE_LOCAL && fw::VIP::VIPStrategy::getContentName(dataName).second && fw::VIP::VIPStrategy::getContentName(dataName).first.second)
                       {
-                          //std::cout<<"Local Request Cache Hit."<<std::endl;
+                          NFD_LOG_DEBUG("First Interest packet for the content: " << fw::VIP::VIPStrategy::getContentName(dataName).first.first << " triggers caching hit and increases VIP count, rxAvg by 1.0");
+                          //std::cout<<"First Interest packet for the content: " << fw::VIP::VIPStrategy::getContentName(dataName).first.first << " triggers caching hit and increases VIP count, rxAvg by 1.0"<<std::endl;
                           std::string contentName = fw::VIP::VIPStrategy::getContentName(dataName).first.first;
                           fw::VIP::VIPStrategy::incLocalCount(contentName,1.0);
                           auto now = std::chrono::system_clock::now();
@@ -795,11 +801,9 @@ namespace nfd {
             //::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
             
             VIPStrategy::VIPStrategy(Forwarder& forwarder,const Name& name)
-            : Strategy(forwarder),m_VIPInterestface(getGlobalIoService()),m_VIPDataface(getGlobalIoService()),m_VIPNameA(VIPAName),m_VIPNameB(VIPBName),m_VIPCountPrefix("/ndn/VIP/Count"),m_VIPCountAPrefix("/ndn/VIP/Count/A"),m_VIPCountBPrefix("/ndn/VIP/Count/B")
+            : Strategy(forwarder),m_VIPInterestface(getGlobalIoService()),m_VIPDataface(getGlobalIoService()),m_VIPNameA(VIPAName),m_VIPNameB(VIPBName),m_VIPCountPrefix("/ndn/VIP/Count"),m_VIPCountAPrefix("/ndn/VIP/Count/A"),m_VIPCountBPrefix("/ndn/VIP/Count/B"),m_calibrationInterestName("/ndn/VIP/Calibrationinterest"),m_calibrationDataName("/ndn/VIP/Calibrationdata")
             {
                
-                 
-        
                 ParsedInstanceName parsed = parseInstanceName(name);
                 if (!parsed.parameters.empty()) {
                     NDN_THROW(std::invalid_argument("VIPStrategy does not accept parameters"));
@@ -826,7 +830,7 @@ namespace nfd {
                         std::string contentName;
                         bool isFirstChunk;
                         st>>chunkName>>contentName>>isFirstChunk;
-                        m_nameMapTable.insert(std::pair<std::string,std::pair<std::string,bool>>(chunkName,std::pair<std::string,bool>(contentName,isFirstChunk)));
+                        m_nameMapTable.insert(std::pair<Name,std::pair<std::string,bool>>(chunkName,std::pair<std::string,bool>(contentName,isFirstChunk)));
                         NFD_LOG_INFO("chunkName: " << chunkName << "\ncontentName: " << contentName << "\nisFirstchunk:" <<isFirstChunk);
                     }
                     while(getline(iContSize,sContSize))

@@ -108,7 +108,7 @@ void VipTable::incLocalCount(const std::string key, const double amount) {
         auto epoch = now_ms.time_since_epoch();
         auto value = std::chrono::duration_cast<std::chrono::seconds>(epoch);
         long duration = value.count();
-        entry = new VipEntry(key, amount, amount,duration);// when some content has already been inserted in other nodes and its VIP counts have changed but it's still not inserted in the local node
+        entry = new VipEntry(key, amount, 0,duration);// when some content has already been inserted in other nodes and its VIP counts have changed but it's still not inserted in the local node
         // the neighbor_vector part may come in handy, may need copy constructor
         if (prev==NULL) {
             vip_table_[hash_val] = entry;
@@ -258,7 +258,7 @@ void VipTable::insert(const std::string key, const double local_vip_count, const
     long duration = value.count();
   if (entry==NULL) {
     catalog_size_++;
-      
+    
     entry = new VipEntry(key, local_vip_count, rx_vip_avg, neighbor_vector,duration); // when some content has already been inserted in other nodes and its VIP counts have changed but it's still not inserted in the local node
                                                       // the neighbor_vector part may come in handy, may need copy constructor
     if (prev==NULL) {

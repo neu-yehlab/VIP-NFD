@@ -148,8 +148,10 @@ VipEntry * VipEntry::getNext() const {
   return next_;
 }
         void VipEntry::updateRxAvg(const long timestamp, const double vip_amount){
+          //std::cout << "rx_vip_avg before: "<<rx_vip_avg_ << std::endl;
           rx_vip_avg_ = rx_vip_avg_ * exp( kDecayParam * (double)(last_timestamp_-timestamp)) + vip_amount;
           last_timestamp_ = timestamp;
+          //std::cout << "rx_vip_avg after: "<<rx_vip_avg_ <<"vip_amount: "<<vip_amount<<std::endl;
         }
         void VipEntry::updateNeighborTxAvg(const int face_id, const long timestamp, const double vip_amount) {
           auto pred = [face_id](const NeighborEntry& neighbor) {
