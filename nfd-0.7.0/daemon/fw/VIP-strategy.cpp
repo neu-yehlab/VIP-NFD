@@ -409,11 +409,11 @@ namespace nfd {
 
                 Name interestName = interest.getName();
                 //std::string interestString = interestName.toUri();
-                //std::cout<<"\n\n\n=========================Interest Packet Received=========================="<<std::endl;
+                //std::cout<<"\n\n\n=========================Interest Packet Received=========================="<<interestName<<std::endl;
                 NFD_LOG_DEBUG("afterReceiveInterest --- Face ID: "<<m_interestFaceId<<"   ---   Data Face ID: "<<m_dataFaceId<<"  "<<interestName);
                 const fib::Entry& fibEntry = this->lookupFib(*pitEntry);
 		//if(std::regex_match(interestString, std::regex("^/ndn/VIP/(.*)")))
-	       std::pair<std::pair<std::string,bool>,bool> objPair = VIPStrategy::getContentName(interestName.getPrefix(interestName.npos-1));
+	       std::pair<std::pair<std::string,bool>,bool> objPair = VIPStrategy::getContentName(interestName.getPrefix(interestName.npos));
         
                if(objPair.second)  
                {
@@ -656,9 +656,9 @@ namespace nfd {
             {
                 
                 Name dataName = data.getName();
-                std::string dataString = dataName.toUri();
+                //std::string dataString = dataName.toUri();
 		//std::cout<<"\n\n\n=========================Received a Data Packet=========================="<<std::endl;
-                //std::cout<<"Data Name: "<<dataString<<std::endl;
+                //std::cout<<"Data Name: "<<dataName<<std::endl;
                 //if it is control packets
                 //if(dataName.size()>=7&&std::regex_match (dataString, std::regex("^/ndn/VIP/Count/(.*)") ))
                 if(dataName.size()>=7 && m_VIPCountPrefix.isPrefixOf(dataName)) //[[unlikely]]
@@ -776,7 +776,7 @@ namespace nfd {
 	          NFD_LOG_DEBUG("afterContentStoreHit with data: "<<data);	
                   //std::string dataName = data.getName().toUri();
                   Name dataName = data.getName();
-                  //std::cout<<"\n\n\n=========================Cache Hit Happened=========================="<<std::endl;
+                  //std::cout<<"\n\n\n=========================Cache Hit Happened========================== "<<data<<std::endl;
                   //std::cout<<"Data Name: "<<dataName<<std::endl;
                   if(ingress.face.getScope() == ndn::nfd::FACE_SCOPE_LOCAL && fw::VIP::VIPStrategy::getContentName(dataName).second && fw::VIP::VIPStrategy::getContentName(dataName).first.second)
                       {

@@ -83,10 +83,11 @@ namespace nfd {
                 //if(std::regex_match (dataName, std::regex("^/ndn/xrootd/(.*)")))
                 if(m_xrootdPrefix.isPrefixOf(dataName))
                 {
+                    //std::cout<<"xrootd data insert: "<<dataName<<" prefix of dataname: "<< dataName.getPrefix(dataName.npos) <<std::endl;
                     std::string contentName;
-                    if(fw::VIP::VIPStrategy::getContentName(dataName.getPrefix(dataName.npos-1)).second)//if the prefix name exists
+                    if(fw::VIP::VIPStrategy::getContentName(dataName.getPrefix(dataName.npos)).second)//if the prefix name exists
                     {
-                        contentName = fw::VIP::VIPStrategy::getContentName(dataName.getPrefix(dataName.npos-1)).first.first;
+                        contentName = fw::VIP::VIPStrategy::getContentName(dataName.getPrefix(dataName.npos)).first.first;
                     }
                     else if(fw::VIP::VIPStrategy::getContentName(dataName).second)//check the content name of received chunk; if it exists in the mapping table, get the name
                     {
@@ -106,7 +107,7 @@ namespace nfd {
                     {
                         //std::cout<<"following actual data block insert\n"<<std::endl;
                         //std::cout<<"_________________________\nchunk_size:  "<<this->getCs()->size()<<"\nblock_size:  "<<m_contentCacheSize<<"\n\n\n"<<std::endl;
-                        m_csVIPTable.modify(it, [i](csVIPEntry& p)
+                        m_csVIPTable.get<0>().modify(it, [i](csVIPEntry& p)
                                             {
                             p.m_fileLevelTable.push_front(i);
                                                             });
@@ -118,15 +119,16 @@ namespace nfd {
                         
                         if((m_contentCacheSize)<= CS_LIMIT)//enough space
                         {
+                            //std::cout<<"enough cache space"<<std::endl;
                             index0.insert(csVIPEntry(contentName,nfd::fw::VIP::VIPStrategy::getRxVipAvg(contentName),i));
-                        }
+                         }
                         else//no enough space, need compare and evict
                         {
                             if(index1.begin()->m_cacheScore < nfd::fw::VIP::VIPStrategy::getRxVipAvg(contentName))//insert and evict old content
                             {
                                 //std::cout<<"repalace old content"<<std::endl;
                                 this->evictEntries();
-                                index0.insert(csVIPEntry(contentName,nfd::fw::VIP::VIPStrategy::getRxVipAvg(contentName),i));
+                                index0.insert(csVIPEntry(contentName,nfd::fw::VIP::VIPStrategy::getRxVipAvg(contentName),i)); 
                             }
                             else// not popular enough
                             {
