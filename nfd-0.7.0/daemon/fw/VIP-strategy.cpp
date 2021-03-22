@@ -266,7 +266,7 @@ namespace nfd {
                 
                 std::string dataBContent((const char*)data.getContent().value(),data.getContent().value_size());
                 NFD_LOG_DEBUG("on dataB Content: "<<dataBContent);
-                std::cout << "on dataB Content: "<<dataBContent <<std::endl;
+                //std::cout << "on dataB Content: "<<dataBContent <<std::endl;
                 std::istringstream f(dataBContent);
                 std::string key;
                 std::string count;
@@ -680,7 +680,7 @@ namespace nfd {
                         //if(std::regex_match(dataString, std::regex("^/ndn/VIP/Count/A/(.*)") ))
                         if(m_VIPCountAPrefix.isPrefixOf(dataName))
                         {
-                            std::cout << "Receive VIPA data: "<<data<<" from neighbor: " << ingress.face.getId()<< " and send to local controller" <<std::endl;
+                            //std::cout << "Receive VIPA data: "<<data<<" from neighbor: " << ingress.face.getId()<< " and send to local controller" <<std::endl;
                             //NFD_LOG_DEBUG("Receive VIPA data: "<<data<<" from neighbor: " << ingress.face.getId()<< " and send to local controller");
                             std::string dataAContent((const char*)data.getContent().value(),data.getContent().value_size());
                             NFD_LOG_DEBUG("Receive VIPA data: "<<data<<" from neighbor: " << ingress.face.getId()<< " and send to local controller");
