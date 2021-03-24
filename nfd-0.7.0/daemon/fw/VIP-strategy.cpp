@@ -471,7 +471,7 @@ namespace nfd {
                     {
                         if(interestName.size() >= 6)//sequential VIP A interest
                         {
-                          this->sendInterest(pitEntry, FaceEndpoint(*(this->getFace(std::stol(interestName[6].toUri()))), 0), interest);
+                          this->sendInterest(pitEntry, FaceEndpoint(*(this->getFace(std::stol(interestName[5].toUri()))), 0), interest);
                           return;
                         }
                         NFD_LOG_DEBUG("first VIP A packet from controller received");
