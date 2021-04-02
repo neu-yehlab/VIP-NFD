@@ -374,9 +374,16 @@ void VipTable::setVIPASeg(const int face_id, uint16_t seg)
                     std::string content;
                     
                     for(int i = this->getVIPASeg(face_id); i<table_size_;++i){
-                        if(vip_table_[i]!=NULL){//have VipEntry arry
-                            std::string append = (vip_table_[i]->getKey())+"\t"+std::to_string(vip_table_[i]->getLocalCount())+"\n";
-                            //content = content+(vip_table_[i]->getKey())+"\t"+std::to_string(vip_table_[i]->getLocalCount())+"\n";
+                        VipEntry *entry = vip_table_[i];
+                        if(entry!=NULL){//have VipEntry arry
+                            std::string append = (entry->getKey())+"\t"+std::to_string(entry->getLocalCount())+"\n";
+                            
+                            while (entry->getNext() != NULL)
+                            { 
+                              entry = entry->getNext();
+                              append = (entry->getKey())+"\t"+std::to_string(entry->getLocalCount())+"\n";
+
+                            } 
                             if(content.size()+append.size()> 7900)
                             {
                               this->setVIPASeg(face_id,(uint16_t)i);
@@ -406,40 +413,42 @@ void VipTable::setVIPASeg(const int face_id, uint16_t seg)
                     double maxDiff = 0;
                     std::string maxDiffName="0";
                     for(int i = 0; i<table_size_;++i){
-                        if(vip_table_[i]!=NULL){//have VipEntry arry
-                            double temp = vip_table_[i]->getLocalCount()-vip_table_[i]->getNeighborCount(face_id);
-                            //std::cout<<"Face_Id:  "<<face_id<<"   ---   Content Name: "<<vip_table_[i]->getKey()<<"   ---   VIPCount Difference: " <<temp<<std::endl;
+                        //Get VIP entry in bucket
+                        if(vip_table_[i]!=NULL)
+                        {
+                            //VipEntry *prev = NULL;
+                            VipEntry *entry = vip_table_[i];
+                            double temp = entry->getLocalCount()-entry->getNeighborCount(face_id);
                             if(abs(temp)>abs(maxDiff)){
                                 maxDiff =temp;
-                                maxDiffName = vip_table_[i]->getKey();
+                                maxDiffName = entry->getKey();
+                            }
+                            
+                            while (entry->getNext() != NULL) 
+                            {
+                              entry = entry->getNext();
+                              double temp = entry->getLocalCount()-entry->getNeighborCount(face_id);
+                              if(abs(temp)>abs(maxDiff)){
+                                maxDiff =temp;
+                                maxDiffName = entry->getKey();
+                              }
                             }
                         }
                     }
                     if(maxDiff>0){
-                        if(this->getLocalCount(maxDiffName)<=LINK_CAPACITY)
-                        {
-                            content = maxDiffName + "\t" + std::to_string(this->getLocalCount(maxDiffName))+"\n";
-                            this->decLocalCount(maxDiffName,this->getLocalCount(maxDiffName));
+                        
+                            //std::cout<<"VIPB generate: "<<content<<"VIP count: "<<this->getLocalCount(maxDiffName)<<std::endl;
+                            double decCount = std::min(this->getLocalCount(maxDiffName),LINK_CAPACITY);
+                            content = maxDiffName + "\t" + std::to_string(decCount)+"\n";
+                            std::cout<<"VIPB generate: "<<content<<"VIP count: "<<this->getLocalCount(maxDiffName)<<std::endl;
+                            this->decLocalCount(maxDiffName,decCount);
+                            std::cout<<"after dec, VIP count: " << this->getLocalCount(maxDiffName) << std::endl;
                             auto now = std::chrono::system_clock::now();
                             auto now_ms = std::chrono::time_point_cast<std::chrono::seconds>(now);
                             auto epoch = now_ms.time_since_epoch();
                             auto value = std::chrono::duration_cast<std::chrono::seconds>(epoch);
                             long duration = value.count();
-                            this->updateNeighborTxAvg(maxDiffName, face_id, duration, -(this->getLocalCount(maxDiffName)));
-                            
-                        }
-                        else
-                        {
-                            content = maxDiffName + "\t" + std::to_string(LINK_CAPACITY)+"\n";
-                            this->decLocalCount(maxDiffName,LINK_CAPACITY);
-                            auto now = std::chrono::system_clock::now();
-                            auto now_ms = std::chrono::time_point_cast<std::chrono::seconds>(now);
-                            auto epoch = now_ms.time_since_epoch();
-                            auto value = std::chrono::duration_cast<std::chrono::seconds>(epoch);
-                            long duration = value.count();
-                            this->updateNeighborTxAvg(maxDiffName, face_id, duration, -LINK_CAPACITY);
-                            
-                        }
+                            this->updateNeighborTxAvg(maxDiffName, face_id, duration, decCount);
 			
                     }
                     return content;
